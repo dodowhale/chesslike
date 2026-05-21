@@ -1,0 +1,23 @@
+# Claude Code 세션/설정
+.claude/
+
+# Superpowers 협업 산출물 (디자인 스펙, 작업 노트 등)
+docs/superpowers/
+
+# Node/Bun 프로젝트 표준
+node_modules/
+dist/
+build/
+*.log
+.env
+.env.local
+.env.*.local
+
+# OS
+.DS_Store
+Thumbs.db
+
+# 에디터
+.vscode/
+.idea/
+*.swp
