@@ -11,8 +11,8 @@ export function createGame({ parent }: CreateGameOptions): Phaser.Game {
   return new Phaser.Game({
     type: Phaser.AUTO,
     parent,
-    width: size,
-    height: size,
+    width: size.width,
+    height: size.height,
     backgroundColor: '#1a1a1a',
     pixelArt: true,
     scale: {

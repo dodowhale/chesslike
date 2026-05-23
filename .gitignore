@@ -19,6 +19,9 @@ build/
 # TypeScript incremental build cache
 *.tsbuildinfo
 
+# Stockfish 엔진 파일은 postinstall로 복사되므로 추적하지 않는다
+client/public/stockfish/
+
 # OS
 .DS_Store
 Thumbs.db

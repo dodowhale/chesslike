@@ -1,10 +1,26 @@
 type Handler<T = unknown> = (payload: T) => void;
 
+export interface BoardRenderState {
+  fen: string;
+  selected?: string;
+  highlights: readonly string[];
+  lastMoveFrom?: string;
+  lastMoveTo?: string;
+  checkSquare?: string;
+  hintFrom?: string;
+  hintTo?: string;
+  orientation: 'w' | 'b';
+  interactive: boolean;
+}
+
 export interface GameEvents {
-  'state:fen': { fen: string };
+  'state:board': BoardRenderState;
   'cmd:reset': void;
   'cmd:applyMove': { uci: string };
+  'cmd:selectSquare': { square: string };
+  'cmd:clearSelection': void;
   'board:ready': void;
+  'board:squareClicked': { square: string };
 }
 
 class TypedEventBus {

@@ -12,6 +12,8 @@
     "build": "bun --filter client build",
     "preview": "bun --filter client preview",
     "typecheck": "bun --filter '*' typecheck",
-    "gen:placeholders": "bun scripts/generate-piece-placeholders.ts"
+    "gen:placeholders": "bun scripts/generate-piece-placeholders.ts",
+    "gen:stockfish": "bun scripts/copy-stockfish.ts",
+    "postinstall": "bun scripts/copy-stockfish.ts"
   }
 }
