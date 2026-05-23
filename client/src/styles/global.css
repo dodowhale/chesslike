@@ -1,0 +1,36 @@
+@import 'tailwindcss';
+
+@theme {
+  --font-pixel: 'DungGeunMo', 'Galmuri11', 'monospace';
+  --color-board-light: #f0d9b5;
+  --color-board-dark: #b58863;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  -webkit-font-smoothing: antialiased;
+  font-family: system-ui, -apple-system, 'Pretendard', 'Apple SD Gothic Neo', sans-serif;
+  overscroll-behavior: none;
+}
+
+img,
+canvas {
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

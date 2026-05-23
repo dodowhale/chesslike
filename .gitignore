@@ -13,6 +13,12 @@ build/
 .env.local
 .env.*.local
 
+# Vite cache
+.vite/
+
+# TypeScript incremental build cache
+*.tsbuildinfo
+
 # OS
 .DS_Store
 Thumbs.db

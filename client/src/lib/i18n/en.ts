@@ -1,0 +1,50 @@
+import type { I18nDict } from './ko';
+
+export const en: I18nDict = {
+  app: {
+    title: 'Pixel Chess Roguelike',
+    subtitle: 'Classic chess meets a pixel roguelike',
+  },
+  menu: {
+    classic: 'Classic',
+    classicDesc: 'FIDE chess — Single / Local Multi',
+    adventure: 'Adventure',
+    adventureDesc: 'HP / Items / Node Map roguelike',
+    settings: 'Settings',
+    achievements: 'Achievements',
+    stats: 'Stats',
+    starShards: 'Star Shards',
+    build: 'Build',
+  },
+  classic: {
+    title: 'Classic',
+    single: 'Single',
+    singleDesc: 'vs AI (Stockfish)',
+    local: 'Local Multi',
+    localDesc: 'Two players, one device',
+    inProgress: 'Coming soon — to be built in the next milestone.',
+    back: 'Back',
+  },
+  adventure: {
+    title: 'Adventure',
+    inProgress: 'Coming soon — to be built in milestone M3.',
+    back: 'Back',
+  },
+  settings: {
+    title: 'Settings',
+    audio: 'Audio',
+    bgm: 'BGM Volume',
+    sfx: 'SFX Volume',
+    muted: 'Mute',
+    locale: 'Language',
+    theme: 'Theme',
+    boardSkin: 'Board Skin',
+    pieceSkin: 'Piece Skin',
+    accessibility: 'Accessibility',
+    reducedMotion: 'Reduce Motion',
+    notation: 'Notation',
+    notationSan: 'SAN',
+    notationSanKr: 'SAN + Korean',
+    close: 'Close',
+  },
+};

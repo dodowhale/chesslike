@@ -174,7 +174,7 @@ interface MetaProgress {
 
 ```typescript
 interface GameState {
-  mode: Mode;
+  mode?: Mode;              // 메인 메뉴 등 모드 미결정 상태에서는 undefined
   classic?: ClassicConfig;
   adventure?: AdventureRunState;
   board: string;            // FEN string

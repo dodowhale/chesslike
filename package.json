@@ -1,0 +1,17 @@
+{
+  "name": "chesslike",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Pixel Chess Roguelike — 정통 체스와 로그라이크 모험이 결합된 픽셀 아트 게임",
+  "workspaces": [
+    "client",
+    "shared"
+  ],
+  "scripts": {
+    "dev": "bun --filter client dev",
+    "build": "bun --filter client build",
+    "preview": "bun --filter client preview",
+    "typecheck": "bun --filter '*' typecheck",
+    "gen:placeholders": "bun scripts/generate-piece-placeholders.ts"
+  }
+}
