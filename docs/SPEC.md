@@ -160,7 +160,10 @@ interface AdventureRunState {
 interface MetaProgress {
   totalStarShards: number;
   unlockedCharacters: string[];
+  /** 개별 아이템 ID 해금 (추후 캐릭터별 시작 아이템 등에 사용). */
   unlockedItems: string[];
+  /** 아이템 풀 키 해금 ('rare-pool' / 'legendary-pool'). */
+  unlockedItemPools: string[];
   unlockedLocations: string[];
   permanentBonuses: {
     startGold?: number;
@@ -185,6 +188,41 @@ interface GameState {
 런타임 별도 저장:
 - `MetaProgress` — 모험 모드 영구 진행
 - `GlobalSettings` — 사운드/언어/테마 등 앱 전체
+- `HistoryEntry` — 게임 종료 시 자동 저장(클래식·모험 공통 슬롯)
+
+### 4.5 Runtime UI/Adventure Misc
+
+```typescript
+/** 클래식 모드 한정 시계 스냅샷. 컨트롤러가 매 frame마다 store에 기록. */
+interface ClockSnapshot {
+  whiteMs: number;
+  blackMs: number;
+  turn: 'w' | 'b';
+  running: boolean;
+  flagged?: 'w' | 'b';
+  unlimited: boolean;
+}
+
+/** 로컬멀티 핫시트 합의 요청(무르기/무승부/기권). */
+interface LocalRequest {
+  kind: 'undo' | 'draw' | 'resign';
+  requestedBy: 'w' | 'b';
+}
+
+/** 게임 종료 시 자동 저장되는 히스토리 항목. */
+interface HistoryEntry {
+  id: string;            // makeId() — Date+random
+  createdAt: number;
+  mode: 'classic' | 'adventure';
+  submode?: 'single' | 'local';
+  difficulty?: string;   // single: 난이도 키 / adventure: 캐릭터 ID
+  playerColor?: 'w' | 'b';
+  result: string;        // '1-0' | '0-1' | '1/2-1/2' | '*'
+  resultDetail: string;  // GameStatus.kind 또는 'victory'/'defeat'
+  pgn: string;           // chess.js가 출력한 SAN PGN(모험은 빈 문자열)
+  movesCount: number;
+}
+```
 
 ## 5. Combat & Edge Cases (Adventure Mode)
 
@@ -224,13 +262,15 @@ interface GameState {
 
 ## 6. Storage & Persistence
 
-| 데이터 | 저장 위치 | 동기화 |
-|---|---|---|
-| 진행 중인 런 (AdventureRunState) | IndexedDB | 로컬만 |
-| MetaProgress | IndexedDB | 옵션: 서버 동기화 |
-| GlobalSettings | IndexedDB + localStorage 백업 | 옵션: 서버 동기화 |
-| 기보 히스토리 (클래식 PGN) | IndexedDB | 로컬만 |
-| 랭킹·도전과제 | 서버 (SQLite) | 필수 (서버 기능 사용 시) |
+| 데이터 | 저장 위치 | 키 | 동기화 |
+|---|---|---|---|
+| 진행 중인 런 (AdventureRunState) | IndexedDB | `adventure:run` | 로컬만 |
+| MetaProgress | IndexedDB | `meta:progress` | 옵션: 서버 동기화 |
+| GlobalSettings | IndexedDB + localStorage 백업 | `settings` | 옵션: 서버 동기화 |
+| 기보 히스토리 (HistoryEntry) | IndexedDB | `history:index` + `history:{id}` | 로컬만 |
+| 랭킹·도전과제 | 서버 (SQLite) | — | 필수 (서버 기능 사용 시) |
+
+IndexedDB는 `idb-keyval` 라이브러리를 거쳐 접근하며, localStorage 백업이 자동 적용된다(quota 부족이거나 비공개 모드 환경 대비).
 
 ## 7. 관련 문서
 

@@ -2,6 +2,29 @@
 
 > 메인메뉴부터 결과 화면까지의 사용자 흐름과 화면 전이.
 
+## 1.0 라우트 매핑 (실 구현)
+
+| URL | 컴포넌트 | 비고 |
+|---|---|---|
+| `/` | MainMenu | 메인 메뉴 (클래식/모험 카드, 푸터에 메타 진입) |
+| `/classic` | ClassicEntry | 싱글/로컬멀티 카드 |
+| `/classic/single` | ClassicSingleOptions | 난이도·시간·플레이어 색상·힌트·무르기 옵션 |
+| `/classic/single/play` | ClassicSinglePlay | 실제 게임 (SingleAdapter) |
+| `/classic/local` | ClassicLocalOptions | 시간·자동 회전·무르기·무승부 옵션 |
+| `/classic/local/play` | ClassicLocalPlay | 실제 게임 (LocalAdapter) |
+| `/adventure` | AdventureEntry | 진행 중 런 표시 + 캐릭터 선택 |
+| `/adventure/run/map` | AdventureMap | 노드 그래프 (SVG 연결선) |
+| `/adventure/run/battle` | AdventureBattle | Battle/Elite — MVP 자동 시뮬레이션 |
+| `/adventure/run/shop` | AdventureShop | 3종 아이템 골드로 구매 |
+| `/adventure/run/event` | AdventureEvent | 텍스트 분기 (effects 시퀀스) |
+| `/adventure/run/rest` | AdventureRest | HP +20 / 골드 +30 택1 |
+| `/adventure/run/boss` | AdventureBoss | 막 보스 (MVP 자동 시뮬레이션) |
+| `/adventure/run/inventory` | AdventureInventory | 슬롯 장착 + 글로벌 모디파이어 |
+| `/adventure/run/result` | AdventureResult | 런 결과 + 별의 조각 정산 |
+| `/meta` | MetaProgress | 해금 트리 (캐릭터/아이템 풀/영구 장식품) |
+
+라우터는 `@solidjs/router` 사용. 모험 라우트들은 `activeRun` 전역 시그널을 공유하며, 컨트롤러가 없으면 `/adventure`로 자동 리다이렉트.
+
 ## 1. 전체 화면 전이도
 
 ```

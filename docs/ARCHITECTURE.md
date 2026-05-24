@@ -11,30 +11,68 @@
 
 ```
 ┌─────────────────────────────┐
-│         Main Menu           │
+│         Main Menu           │──→ /meta (해금 트리)
 └──────────┬─────────┬────────┘
            │         │
            ▼         ▼
     ┌──────────┐  ┌────────────────────┐
-    │ Classic  │  │     Adventure      │
-    │  Scene   │  │      Scene         │
-    │Controller│  │     Controller     │
+    │ Classic  │  │   AdventureRun     │
+    │  Scene   │  │    Controller      │
+    │Controller│  │  (단일 인스턴스)    │
+    │ Base     │  │                    │
     └────┬─────┘  └──────────┬─────────┘
          │                   │
-   ┌─────┴──────┐    ┌───────┼──────────┐
-   ▼            ▼    ▼       ▼          ▼
-SingleAdapter LocalAdapter MapScene BattleScene EventScene
-   │            │       │       │           │
-   └─stockfish  └─Timer └──── chess.js + ItemSystem + MetaStore
-     Worker
+   ┌─────┴──────┐     ┌──────┴──────────────────┐
+   ▼            ▼     ▼      ▼     ▼     ▼      ▼
+SingleAdapter LocalAdapter Map Battle Event Rest Boss
+   │            │           │     │            
+   └─stockfish  └─합의모달   └─ AdventureChessManager + Inventory
+     Worker     (LocalReq)        + Star Shards + MetaStore
+```
+
+### 2.1 컨트롤러 계층 (실 구현)
+
+```ts
+abstract class ClassicSceneControllerBase {
+  // 공통: 시계(ClockManager) + 종료/히스토리/라이프사이클
+  attach(): void;
+  destroy(): void;
+  rematch(): void;
+  abstract requestUndo(): void;
+  abstract resign(): void;
+  protected abstract preferredOrientation(): Color;
+  protected abstract start(): void;
+  protected abstract historyPgnContext(): PgnContext;
+}
+
+class SingleAdapter extends ClassicSceneControllerBase {
+  // + StockfishEngine, 난이도, AI 자동 응답(turn effect),
+  // + 힌트(token 검증), 무르기(engine.stop 후 ply 분기), 분석 모드 인지
+}
+
+class LocalAdapter extends ClassicSceneControllerBase {
+  // + 합의 모달(localRequest), 자동 보드 회전(turn effect),
+  // + 색 교대(rematch 시 startingColor 토글)
+}
+
+class AdventureRunController {
+  // 자체 클래스 (베이스 상속 없음 — 흐름이 클래식과 다름)
+  // + AdventureChessManager(도메인 로직 준비)
+  // + 노드 진행/인벤토리/HP/골드/별의 조각
+  // + advanceAct (1→2→3막)
+  // + persistRun (IndexedDB)
+  static restore(run, meta): AdventureRunController;
+}
 ```
 
 | 컨트롤러 | 역할 | 의존 모듈 |
 |---|---|---|
-| `ClassicSceneController` | submode 분기 (`SingleAdapter` / `LocalAdapter`), 시계, 종료 처리 | chess.js, Timer, (싱글) stockfishWorker |
-| `AdventureSceneController` | 노드 라우팅, 전투/이벤트/상점/휴식/보스 씬 전환 | chess.js, MapGenerator, ItemSystem, MetaStore, stockfishWorker |
+| `ClassicSceneControllerBase` | 시계·종료·히스토리·라이프사이클 공통 흐름 | ClockManager, chess.js, historyRepo |
+| `SingleAdapter` | AI 자동 응답·힌트·무르기·분석 | StockfishEngine, SingleDifficulty |
+| `LocalAdapter` | 핫시트 합의 흐름·보드 자동 회전·색 교대 | (베이스만으로 충분) |
+| `AdventureRunController` | 노드 진행·인벤토리·HP·골드·별의 조각·막 전환 | AdventureChessManager, MapGenerator, ItemSystem, MetaStore(`metaStore.ts`), runPersist |
 
-각 컨트롤러는 SolidJS 컴포넌트 트리 안에서 Phaser 인스턴스 위에 얹어진다.
+각 컨트롤러는 SolidJS 컴포넌트 트리 안에서 라우트 컴포넌트가 `onMount`로 생성하고 `onCleanup`에서 `destroy()`를 호출한다. AdventureRunController는 `activeRun` 전역 시그널로 모험 라우트 컴포넌트들이 공유한다.
 
 ## 3. Interface (SolidJS ↔ Phaser)
 
@@ -117,26 +155,60 @@ SingleAdapter LocalAdapter MapScene BattleScene EventScene
 | 기보 히스토리 | IndexedDB | — |
 | 랭킹/도전과제 | — | SQLite |
 
-## 7. Module Dependency Graph
+## 7. Module Dependency Graph (실 구현)
 
 ```
-ClassicSceneController
-  ├── chess.js
-  ├── Timer
-  └── (singleAdapter) → stockfishWorker
+SolidJS Store (gameStore)
+  ├── ui.clock  (← ClassicSceneControllerBase 갱신)
+  ├── ui.status (← 종료 전이 호스트)
+  ├── ui.localRequest  (← LocalAdapter 합의 흐름)
+  ├── ui.aiThinking    (← SingleAdapter)
+  ├── adventure (← AdventureRunController)
+  └── board (FEN)
 
-AdventureSceneController
-  ├── chess.js
+metaStore (전역 신호)
+  ↑ ensureMetaLoaded / updateMeta
+  ├── MainMenu (별의 조각 표시)
+  ├── AdventureEntry (캐릭터 잠금 반영)
+  └── MetaProgress 화면
+
+ClassicSceneControllerBase
+  ├── ChessManager (chess.js 격리)
+  ├── ClockManager
+  ├── historyRepo (IndexedDB)
+  └── gameStore.setOrientation/setClockSnapshot/...
+
+SingleAdapter ──── extends ─── ClassicSceneControllerBase
+  └── StockfishEngine (Web Worker) + SingleDifficulty 프리셋
+
+LocalAdapter ──── extends ─── ClassicSceneControllerBase
+  └── gameStore.localRequest (합의 모달 호스트)
+
+AdventureRunController
+  ├── AdventureChessManager (chess.js + HP/캡처)
   ├── MapGenerator
-  ├── ItemSystem
-  ├── MetaStore (→ IndexedDB)
-  └── stockfishWorker
+  ├── data/{items,characters,events,unlocks,globalModifiers}
+  ├── runPersist (IndexedDB `adventure:run`)
+  └── gameStore.snapshotAdventureRun
 
 Shared
-  ├── SolidJS Store
-  ├── Event Bus
-  └── PhaserBridge (Solid ↔ Phaser)
+  ├── eventBus (Solid ↔ Phaser, 단방향: cmd:* / 양방향: state:board)
+  └── BoardScene (eventBus 구독, 200ms 회전 트랜지션, HP 오버레이는 M5)
 ```
+
+### 7.1 chess.js 격리
+
+`chess.js`는 도메인 외부로 누출되지 않는다. `client/src/lib/chess/ChessManager.ts` 한 파일에서만 `from 'chess.js'`로 import하며, 외부 코드는 ChessManager가 재export한 `Square`/`PieceSymbol`/`Color` 타입을 사용한다.
+
+### 7.2 IndexedDB 키 네임스페이스
+
+| 키 | 데이터 | 라이프사이클 |
+|---|---|---|
+| `settings` | GlobalSettings | 앱 전역 |
+| `meta:progress` | MetaProgress | 모험 영구 |
+| `adventure:run` | AdventureRunState | 런 진행 중만 |
+| `history:index` | string[] (HistoryEntry ID 최대 200개) | 영구 |
+| `history:{id}` | HistoryEntry | 영구 |
 
 ## 8. 관련 문서
 
