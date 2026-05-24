@@ -60,10 +60,10 @@ export class BoardScene extends Phaser.Scene {
     this.offState = eventBus.on('state:board', (payload) => {
       this.currentState = payload;
       if (payload.orientation !== this.orientation) {
-        this.orientation = payload.orientation;
-        this.drawTilesAndCoords();
+        this.applyOrientation(payload.orientation, payload.instant === true);
+      } else {
+        this.render();
       }
-      this.render();
     });
 
     const teardown = () => {
@@ -194,6 +194,28 @@ export class BoardScene extends Phaser.Scene {
         file += 1;
       }
     }
+  }
+
+  private applyOrientation(orientation: 'w' | 'b', instant: boolean): void {
+    if (instant) {
+      this.orientation = orientation;
+      this.drawTilesAndCoords();
+      this.render();
+      return;
+    }
+    // 200ms 페이드 아웃 → swap → 페이드 인. 보드/기물/오버레이가 함께 페이드된다.
+    const targets = [this.tileLayer, this.overlayLayer, this.pieceLayer, this.coordLayer];
+    this.tweens.add({
+      targets,
+      alpha: 0,
+      duration: 100,
+      onComplete: () => {
+        this.orientation = orientation;
+        this.drawTilesAndCoords();
+        this.render();
+        this.tweens.add({ targets, alpha: 1, duration: 100 });
+      },
+    });
   }
 
   private drawTile(square: string, color: number, alpha: number): void {

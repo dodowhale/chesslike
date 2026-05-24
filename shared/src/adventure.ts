@@ -82,7 +82,10 @@ export interface AdventureRunState {
 export interface MetaProgress {
   totalStarShards: number;
   unlockedCharacters: string[];
+  /** 개별 아이템 ID 해금 목록 (현재 미사용, 추후 캐릭터별 시작 아이템 등). */
   unlockedItems: string[];
+  /** 아이템 풀 키 해금 목록 ('rare-pool' / 'legendary-pool' 등). */
+  unlockedItemPools: string[];
   unlockedLocations: string[];
   permanentBonuses: {
     startGold?: number;

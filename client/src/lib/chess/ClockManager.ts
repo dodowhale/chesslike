@@ -1,12 +1,7 @@
 import type { ClassicTimeControl } from '@shared/classic';
+import type { ClockSnapshot } from '@shared/clock';
 
-export interface ClockState {
-  whiteMs: number;
-  blackMs: number;
-  turn: 'w' | 'b';
-  running: boolean;
-  flagged?: 'w' | 'b';
-}
+export type ClockState = ClockSnapshot;
 
 export interface ClockManager {
   state(): ClockState;
@@ -30,13 +25,14 @@ function presetDurations(preset: NonNullable<ClassicTimeControl['preset']>): {
   initialMs: number;
   incrementMs: number;
 } {
+  // docs/modes/classic/COMMON.md §3 시간 제어 프리셋 정의를 따른다.
   switch (preset) {
     case 'bullet':
       return { initialMs: 60_000, incrementMs: 0 };
     case 'blitz':
-      return { initialMs: 5 * 60_000, incrementMs: 0 };
+      return { initialMs: 3 * 60_000, incrementMs: 2_000 };
     case 'rapid':
-      return { initialMs: 10 * 60_000, incrementMs: 0 };
+      return { initialMs: 10 * 60_000, incrementMs: 5_000 };
     case 'classical':
       return { initialMs: 30 * 60_000, incrementMs: 0 };
   }
@@ -73,7 +69,7 @@ export function createClockManager(
   let lastTick = 0;
 
   function snapshot(): ClockState {
-    return { whiteMs, blackMs, turn, running, flagged };
+    return { whiteMs, blackMs, turn, running, flagged, unlimited };
   }
 
   function settle(now: number): void {

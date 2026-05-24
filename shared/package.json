@@ -11,6 +11,7 @@
     "./classic": "./src/classic.ts",
     "./adventure": "./src/adventure.ts",
     "./settings": "./src/settings.ts",
+    "./clock": "./src/clock.ts",
     "./game": "./src/game.ts"
   },
   "scripts": {

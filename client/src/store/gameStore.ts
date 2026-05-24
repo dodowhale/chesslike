@@ -1,8 +1,9 @@
 import { createStore } from 'solid-js/store';
 import type { Mode } from '@shared/mode';
 import type { ClassicConfig } from '@shared/classic';
-import type { AdventureRunState } from '@shared/adventure';
+import type { AdventureRunState, MetaProgress } from '@shared/adventure';
 import { INITIAL_FEN, type GameState } from '@shared/game';
+import type { ClockSnapshot } from '@shared/clock';
 import {
   createChessManager,
   type GameStatus,
@@ -12,6 +13,14 @@ import {
   type PieceSymbol,
 } from '@/lib/chess/ChessManager';
 import { eventBus, type BoardRenderState } from '@/lib/phaser/bridge/eventBus';
+import { settings } from '@/store/settingsStore';
+
+export type LocalRequestKind = 'undo' | 'draw' | 'resign';
+
+export interface LocalRequest {
+  kind: LocalRequestKind;
+  requestedBy: Color;
+}
 
 interface UiState {
   selected?: Square;
@@ -23,6 +32,10 @@ interface UiState {
   hint?: { from: Square; to: Square };
   hintsUsed: number;
   undosUsed: number;
+  clock?: ClockSnapshot;
+  aiThinking: boolean;
+  /** 로컬멀티에서 한쪽이 요청한 합의 상태. 다른 쪽 응답을 기다린다. */
+  localRequest?: LocalRequest;
 }
 
 interface RootState extends GameState {
@@ -41,6 +54,7 @@ const initial: RootState = {
     interactive: true,
     hintsUsed: 0,
     undosUsed: 0,
+    aiThinking: false,
   },
 };
 
@@ -48,6 +62,8 @@ const [state, setState] = createStore<RootState>(initial);
 const chess = createChessManager();
 
 export const gameStore = state;
+
+let nextEmitInstant = false;
 
 function emitBoard(): void {
   const lastMove = chess.lastMove();
@@ -63,7 +79,9 @@ function emitBoard(): void {
     hintTo: state.ui.hint?.to,
     orientation: state.ui.orientation,
     interactive: state.ui.interactive,
+    instant: nextEmitInstant || settings.accessibility.reducedMotion,
   };
+  nextEmitInstant = false;
   eventBus.emit('state:board', payload);
 }
 
@@ -83,8 +101,53 @@ export function setAdventureRun(run: AdventureRunState | undefined): void {
   setState('adventure', run);
 }
 
-export function setOrientation(color: Color): void {
+export function snapshotAdventureRun(run: AdventureRunState): void {
+  // 컨트롤러가 변경 시 호출. 불변 복사를 store에 반영해 reactivity 트리거.
+  setState('adventure', { ...run });
+}
+
+const META_KEY = 'meta:progress';
+const DEFAULT_META: MetaProgress = {
+  totalStarShards: 0,
+  unlockedCharacters: ['standard'],
+  unlockedItems: [],
+  unlockedItemPools: [],
+  unlockedLocations: [],
+  permanentBonuses: {},
+};
+
+export async function loadMetaProgress(): Promise<MetaProgress> {
+  const { kvGet } = await import('@/lib/storage/kv');
+  const stored = await kvGet<MetaProgress>(META_KEY);
+  if (!stored) return DEFAULT_META;
+  return {
+    ...DEFAULT_META,
+    ...stored,
+    // 구버전 호환: unlockedItemPools가 없으면 unlockedItems에서 분리 추출
+    unlockedItemPools:
+      stored.unlockedItemPools ??
+      stored.unlockedItems.filter((k) => k === 'rare-pool' || k === 'legendary-pool'),
+    unlockedItems: (stored.unlockedItems ?? []).filter(
+      (k) => k !== 'rare-pool' && k !== 'legendary-pool',
+    ),
+    permanentBonuses: { ...DEFAULT_META.permanentBonuses, ...stored.permanentBonuses },
+  };
+}
+
+export async function saveMetaProgress(meta: MetaProgress): Promise<void> {
+  const { kvSet } = await import('@/lib/storage/kv');
+  await kvSet(META_KEY, meta);
+}
+
+export function setOrientation(color: Color, options: { instant?: boolean } = {}): void {
+  const changed = state.ui.orientation !== color;
   setState('ui', 'orientation', color);
+  if (changed && !options.instant) {
+    // 차례 변경에 따른 시각적 회전 — 200ms 트랜지션을 BoardScene이 그린다.
+    nextEmitInstant = false;
+  } else {
+    nextEmitInstant = true;
+  }
   emitBoard();
 }
 
@@ -109,6 +172,9 @@ export function resetBoard(): void {
     hint: undefined,
     hintsUsed: 0,
     undosUsed: 0,
+    clock: undefined,
+    aiThinking: false,
+    localRequest: undefined,
   });
   emitBoard();
 }
@@ -117,6 +183,8 @@ export function setStatus(status: GameStatus): void {
   setState('ui', 'status', status);
   if (status.kind !== 'ongoing') {
     setState('ui', 'interactive', false);
+    // 게임이 종료되면 떠 있는 합의 요청 모달도 함께 정리한다
+    setState('ui', 'localRequest', undefined);
   }
   emitBoard();
 }
@@ -137,6 +205,7 @@ export function clearSelection(): void {
 export function selectSquare(square: Square): void {
   if (!state.ui.interactive) return;
   if (state.ui.pendingPromotion) return;
+  if (state.ui.localRequest) return;
   const dests = chess.legalDestinations(square);
   if (dests.length === 0) {
     clearSelection();
@@ -178,6 +247,7 @@ export function applyMove(uci: string): MoveDescriptor | null {
 export function handleSquareClick(square: Square): 'moved' | 'selected' | 'cleared' | 'promotion' | 'noop' {
   if (!state.ui.interactive) return 'noop';
   if (state.ui.pendingPromotion) return 'noop';
+  if (state.ui.localRequest) return 'noop';
   const selected = state.ui.selected;
   if (selected && square === selected) {
     clearSelection();
@@ -269,6 +339,18 @@ export function incrementHintsUsed(): void {
 
 export function incrementUndosUsed(): void {
   setState('ui', 'undosUsed', (n) => n + 1);
+}
+
+export function setClockSnapshot(snapshot: ClockSnapshot | undefined): void {
+  setState('ui', 'clock', snapshot);
+}
+
+export function setAiThinking(thinking: boolean): void {
+  setState('ui', 'aiThinking', thinking);
+}
+
+export function setLocalRequest(req: LocalRequest | undefined): void {
+  setState('ui', 'localRequest', req);
 }
 
 export function getChessManager() {

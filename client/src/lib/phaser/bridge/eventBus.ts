@@ -11,6 +11,8 @@ export interface BoardRenderState {
   hintTo?: string;
   orientation: 'w' | 'b';
   interactive: boolean;
+  /** orientation 변경 시 트랜지션 효과를 건너뛸지 여부 (모션 감소 옵션 등). */
+  instant?: boolean;
 }
 
 export interface GameEvents {

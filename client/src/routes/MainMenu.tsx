@@ -1,10 +1,11 @@
-import { createSignal } from 'solid-js';
+import { createSignal, onMount } from 'solid-js';
 import { useNavigate } from '@solidjs/router';
 import { HeaderBar } from '@/components/menu/HeaderBar';
 import { ModeCard } from '@/components/menu/ModeCard';
 import { SettingsModal } from './SettingsModal';
 import { t } from '@/lib/i18n';
 import { setMode } from '@/store/gameStore';
+import { ensureMetaLoaded, metaSignal } from '@/store/metaStore';
 
 const BUILD_VERSION = import.meta.env.VITE_BUILD_VERSION ?? '0.0.0-dev';
 
@@ -12,6 +13,10 @@ export default function MainMenu() {
   const navigate = useNavigate();
   const [settingsOpen, setSettingsOpen] = createSignal(false);
   const dict = () => t();
+
+  onMount(() => {
+    void ensureMetaLoaded();
+  });
 
   return (
     <div class="min-h-screen flex flex-col">
@@ -47,9 +52,17 @@ export default function MainMenu() {
         </div>
       </main>
       <footer class="px-4 py-3 flex justify-between text-xs text-slate-500 border-t border-slate-800">
-        <span>
-          {dict().menu.starShards}: <span class="text-amber-400 tabular-nums">0</span>
-        </span>
+        <button
+          type="button"
+          onClick={() => navigate('/meta')}
+          class="hover:text-amber-300 transition-colors"
+        >
+          {dict().menu.starShards}:{' '}
+          <span class="text-amber-400 tabular-nums">
+            {metaSignal()?.totalStarShards ?? 0}
+          </span>{' '}
+          · 메타 진행 →
+        </button>
         <span>
           {dict().menu.build} {BUILD_VERSION}
         </span>

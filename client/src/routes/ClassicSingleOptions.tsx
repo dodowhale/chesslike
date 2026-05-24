@@ -8,8 +8,8 @@ import { setClassicConfig, setMode } from '@/store/gameStore';
 
 const TIME_PRESETS: { key: ClassicTimeControl['preset']; label: string }[] = [
   { key: 'bullet', label: '불릿 (1분)' },
-  { key: 'blitz', label: '블리츠 (5분)' },
-  { key: 'rapid', label: '래피드 (10분)' },
+  { key: 'blitz', label: '블리츠 (3분 + 2초)' },
+  { key: 'rapid', label: '래피드 (10분 + 5초)' },
   { key: 'classical', label: '클래시컬 (30분)' },
 ];
 

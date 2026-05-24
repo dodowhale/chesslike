@@ -1,11 +1,12 @@
 import { Show } from 'solid-js';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
-import { gameStore, resetBoard } from '@/store/gameStore';
+import { gameStore } from '@/store/gameStore';
 import type { GameStatus } from '@/lib/chess/ChessManager';
 
 interface GameOverDialogProps {
   onClose?: () => void;
+  onRematch?: () => void;
   onAnalyze?: () => void;
 }
 
@@ -45,11 +46,6 @@ export function GameOverDialog(props: GameOverDialogProps) {
   const open = () => status().kind !== 'ongoing';
   const lastMove = () => gameStore.moves.at(-1);
 
-  function rematch() {
-    resetBoard();
-    props.onClose?.();
-  }
-
   return (
     <Show when={open()}>
       <Modal open={true} onClose={() => props.onClose?.()} title={statusTitle(status())}>
@@ -63,7 +59,9 @@ export function GameOverDialog(props: GameOverDialogProps) {
             )}
           </Show>
           <div class="flex gap-2 mt-2">
-            <Button onClick={rematch}>다시 두기</Button>
+            <Show when={props.onRematch}>
+              <Button onClick={() => props.onRematch?.()}>다시 두기</Button>
+            </Show>
             <Show when={props.onAnalyze}>
               <Button variant="secondary" onClick={() => props.onAnalyze?.()}>
                 분석 모드
