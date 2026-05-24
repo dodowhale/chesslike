@@ -80,15 +80,16 @@ export class BoardScene extends Phaser.Scene {
       this.characterId = payload.characterId ?? 'standard';
       this.currentState = payload;
       if (themeChanged) this.drawTilesAndCoords();
-      if (payload.orientation !== this.orientation) {
-        this.applyOrientation(payload.orientation, payload.instant === true);
-      } else if (characterChanged) {
-        // 캐릭터 변경 시 모든 sprite를 새 텍스처로 다시 그림 — instant 분기.
+      if (characterChanged) {
+        // 캐릭터 변경 시 모든 sprite를 새 텍스처로 다시 그리도록 강제 teardown.
+        // 이후 render/applyOrientation이 새 텍스처 키로 sprite 재생성.
         // 진행 중 Tween은 즉시 종료해 race를 피한다.
         this.activeTween?.complete();
         this.activeTween = null;
         this.sprites.forEach((_, sq) => this.destroyPieceSprite(sq));
-        this.render();
+      }
+      if (payload.orientation !== this.orientation) {
+        this.applyOrientation(payload.orientation, payload.instant === true);
       } else {
         this.render();
       }
