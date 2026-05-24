@@ -32,6 +32,7 @@ import {
 import { INITIAL_FEN as STARTING_FEN } from '@shared/game';
 import type { SceneController } from './types';
 import { getCharacterById } from '@/lib/adventure/data/characters';
+import { settings } from '@/store/settingsStore';
 
 /**
  * ADVENTURE.md §8.1 별의 조각 보상.
@@ -68,6 +69,7 @@ export class AdventureRunController implements SceneController {
   /** 노드 진입 시점에 활성화되는 보드 매니저 (Battle/Elite/Boss). */
   private boardChess: AdventureChessManager | null = null;
   private initErrorSignal = createSignal<string | null>(null);
+  private aiReplyTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor(opts: {
     character: Character;
@@ -122,7 +124,10 @@ export class AdventureRunController implements SceneController {
   initError = () => this.initErrorSignal[0]();
 
   destroy(): void {
-    /* 모험 런은 store에 상태가 남아도 무방 — 명시 destroy는 noop. 라우트 unmount 시 호출됨. */
+    if (this.aiReplyTimer) {
+      clearTimeout(this.aiReplyTimer);
+      this.aiReplyTimer = null;
+    }
   }
 
   /** 현재 노드 디스크립터. */
@@ -366,6 +371,10 @@ export class AdventureRunController implements SceneController {
   }
 
   leaveBoardNode(): void {
+    if (this.aiReplyTimer) {
+      clearTimeout(this.aiReplyTimer);
+      this.aiReplyTimer = null;
+    }
     this.boardChess = null;
     setAdventurePieceHps(undefined);
   }
@@ -379,8 +388,12 @@ export class AdventureRunController implements SceneController {
     if (!result.ok) return result;
     this.syncBoard(result.lastMove);
     if (this.checkBoardEndCondition('w')) return result;
-    // 사용자 차례 끝 — 다음 프레임에 AI 응답
-    queueMicrotask(() => this.scheduleAiReply());
+    // 사용자 차례 끝 — AI 응답을 살짝 지연시켜 sprite Tween이 화면에 보이게.
+    const delay = settings.accessibility.reducedMotion ? 0 : 250;
+    this.aiReplyTimer = setTimeout(() => {
+      this.aiReplyTimer = null;
+      this.scheduleAiReply();
+    }, delay);
     return result;
   }
 

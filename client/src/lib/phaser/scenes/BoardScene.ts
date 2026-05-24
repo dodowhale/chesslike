@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { eventBus, type BoardRenderState } from '../bridge/eventBus';
+import { eventBus, type BoardRenderState, type LastMove } from '../bridge/eventBus';
 
 const TILE = 56;
 const BOARD_SIZE = TILE * 8;
@@ -190,8 +190,16 @@ export class BoardScene extends Phaser.Scene {
     if (pieceHps) {
       for (const p of pieceHps) hpMap.set(p.square, { hp: p.hp, maxHp: p.maxHp });
     }
-    // Task 2: instant only. Task 3에서 lastMove + !noPieceAnim 분기로 applyAnimated 추가.
-    this.applyInstant(desired, hpMap);
+    const animate =
+      lastMove &&
+      !this.currentState.noPieceAnim &&
+      !this.currentState.instant &&
+      this.sprites.has(lastMove.from);
+    if (animate) {
+      this.applyAnimated(lastMove, desired, hpMap);
+    } else {
+      this.applyInstant(desired, hpMap);
+    }
   }
 
   private createPieceSprite(
@@ -301,6 +309,112 @@ export class BoardScene extends Phaser.Scene {
         existing.hpBg = undefined;
         existing.hpFg = undefined;
       }
+    }
+  }
+
+  private tweenContainerTo(
+    container: Phaser.GameObjects.Container,
+    toX: number,
+    toY: number,
+    duration: number,
+  ): Phaser.Tweens.Tween {
+    return this.tweens.add({
+      targets: container,
+      x: toX,
+      y: toY,
+      duration,
+      ease: 'Sine.easeInOut',
+    });
+  }
+
+  private fadeOutAndDestroy(
+    container: Phaser.GameObjects.Container,
+    duration: number,
+  ): Phaser.Tweens.Tween {
+    return this.tweens.add({
+      targets: container,
+      alpha: 0,
+      duration,
+      onComplete: () => container.destroy(),
+    });
+  }
+
+  private applyAnimated(
+    lastMove: LastMove,
+    desired: Map<string, string>,
+    hpMap: Map<string, { hp: number; maxHp: number }>,
+  ): void {
+    // 이전 활성 Tween 즉시 완결 → race 방지
+    if (this.activeTween) {
+      this.activeTween.complete();
+      this.activeTween = null;
+    }
+
+    const tweens: Phaser.Tweens.Tween[] = [];
+
+    // Step A. 캡처/앙파상의 피격자 페이드아웃
+    const victimSq = lastMove.victimSquare ?? (lastMove.kind === 'capture' || lastMove.kind === 'promotion' ? lastMove.to : undefined);
+    if (lastMove.capturedKey && victimSq) {
+      const victimSprite = this.sprites.get(victimSq);
+      if (victimSprite) {
+        this.sprites.delete(victimSq);
+        tweens.push(this.fadeOutAndDestroy(victimSprite.container, 150));
+      }
+    }
+
+    // Step B. 메인 sprite 이동 — 맵 등록은 즉시 (Tween 도중 reset 등으로 다시 render되어도 정합 유지).
+    const moverSprite = this.sprites.get(lastMove.from);
+    if (moverSprite) {
+      this.sprites.delete(lastMove.from);
+      this.sprites.set(lastMove.to, moverSprite);
+      const px = this.squareToPixel(lastMove.to);
+      if (px) {
+        const tween = this.tweenContainerTo(moverSprite.container, px.x, px.y, 200);
+        if (lastMove.kind === 'promotion' && lastMove.promotedTo) {
+          tween.once('complete', () => {
+            const isWhite = moverSprite.pieceChar === moverSprite.pieceChar.toUpperCase();
+            const newChar = isWhite ? lastMove.promotedTo!.toUpperCase() : lastMove.promotedTo!;
+            moverSprite.pieceChar = newChar;
+            const tex = PIECE_KEY[newChar];
+            if (tex) moverSprite.image.setTexture(tex);
+          });
+        }
+        tweens.push(tween);
+      }
+    }
+
+    // Step C. 캐슬링 룩 동시 이동 — 마찬가지로 sprite 맵 즉시 등록.
+    if (lastMove.kind === 'castling' && lastMove.rookFrom && lastMove.rookTo) {
+      const rookSprite = this.sprites.get(lastMove.rookFrom);
+      if (rookSprite) {
+        this.sprites.delete(lastMove.rookFrom);
+        this.sprites.set(lastMove.rookTo, rookSprite);
+        const px = this.squareToPixel(lastMove.rookTo);
+        if (px) {
+          const tween = this.tweenContainerTo(rookSprite.container, px.x, px.y, 200);
+          tweens.push(tween);
+        }
+      }
+    }
+
+    this.activeTween = tweens[tweens.length - 1] ?? null;
+
+    // Step D. 잔여 diff — desired에 있지만 sprite가 없는 칸 (외부 효과)
+    for (const [square, pieceChar] of desired) {
+      if (!this.sprites.has(square)) {
+        const occupiedByMover = lastMove.to === square;
+        const occupiedByRook = lastMove.kind === 'castling' && lastMove.rookTo === square;
+        if (!occupiedByMover && !occupiedByRook) {
+          const sprite = this.createPieceSprite(square, pieceChar, hpMap.get(square));
+          this.sprites.set(square, sprite);
+        }
+      }
+    }
+
+    // Step E. HP 즉시 갱신 (Task 4에서 width tween으로 교체)
+    for (const [square, hpInfo] of hpMap) {
+      const sprite = this.sprites.get(square) ?? (lastMove.to === square ? moverSprite : undefined);
+      if (sprite) this.attachHpBar(sprite, hpInfo.hp, hpInfo.maxHp);
     }
   }
 
