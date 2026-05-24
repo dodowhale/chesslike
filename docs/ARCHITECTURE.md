@@ -57,9 +57,10 @@ class LocalAdapter extends ClassicSceneControllerBase {
 
 class AdventureRunController {
   // 자체 클래스 (베이스 상속 없음 — 흐름이 클래식과 다름)
-  // + AdventureChessManager(도메인 로직 준비)
+  // + AdventureChessManager 인스턴스 (보드 활성화 시)
   // + 노드 진행/인벤토리/HP/골드/별의 조각
-  // + advanceAct (1→2→3막)
+  // + advanceAct (1→2→3막) / startNextBossPhase (플레이어 HP 보존)
+  // + enterBoardNode(preserve?) / attemptBoardMove / scheduleAiReply
   // + persistRun (IndexedDB)
   static restore(run, meta): AdventureRunController;
 }
@@ -205,10 +206,34 @@ Shared
 | 키 | 데이터 | 라이프사이클 |
 |---|---|---|
 | `settings` | GlobalSettings | 앱 전역 |
-| `meta:progress` | MetaProgress | 모험 영구 |
+| `meta:progress` | MetaProgress (totalStarShards, unlockedCharacters, unlockedItemPools, unlockedLocations, permanentBonuses) | 모험 영구 |
 | `adventure:run` | AdventureRunState | 런 진행 중만 |
 | `history:index` | string[] (HistoryEntry ID 최대 200개) | 영구 |
 | `history:{id}` | HistoryEntry | 영구 |
+
+### 7.3 모험 보드 인터랙션 (M5)
+
+모험 라우트가 BoardScene 클릭을 가로채기 위해 `gameStore.setAdventureClickHandler(handler)`로 콜백을 등록한다. eventBus의 `board:squareClicked`는 항상 단일 진입점(gameStore의 listener)으로 들어와 `mode === 'adventure'`이면 `adventureClickHandler`로 위임하고, 그 외에는 클래식 `handleSquareClick`을 호출한다. 이로써 라우트 전환 race에서 다중 핸들러가 등록되는 문제를 차단한다.
+
+```
+[BoardScene pointerup] → eventBus.emit('board:squareClicked', { square })
+       ↓
+[gameStore listener] — state.mode 분기
+       ├─ 'adventure' → adventureClickHandler(square)  // AdventureBattle/Boss
+       └─ 그 외      → handleSquareClick(square)        // 클래식 chess.js
+```
+
+AdventureBattle/Boss는 `controller.attemptBoardMove(uci)` 호출 → 컨트롤러가 `AdventureChessManager.tryMove`로 SPEC §5.1~5.5(HP 차감 캡처/앙파상/승급/스테일메이트) 처리 → `setAdventureBoardSnapshot(fen, hps)` 단일 batch로 store/BoardScene 갱신. 그 다음 microtask에서 `scheduleAiReply()` 발화.
+
+### 7.4 AudioManager (M5)
+
+`client/src/lib/audio/AudioManager.ts`는 Web Audio API 기반의 SFX (사인파 placeholder) 매니저다. 브라우저 정책상 사용자 제스처 이후에만 `AudioContext`를 만들 수 있어, `main.tsx`가 첫 `pointerdown`/`keydown`에서 `audioManager.init()` 1회 호출한다. `settingsStore`는 `audio.bgmVolume/sfxVolume/muted` 변경 effect로 `applyVolumes()`를 자동 호출하므로, 설정 모달의 슬라이더가 즉시 반영된다.
+
+`playBgm`은 정식 BGM 파일 도입 전까지 의도적 noop이며, M6+ 외부 자산 작업에서 Howler.js 또는 Audio 태그로 활성화한다.
+
+### 7.5 server 워크스페이스 (M5 스켈레톤)
+
+루트 `package.json`의 workspaces에 `server`가 추가됨. `server/src/index.ts`는 Hono로 `/health`, `/api/leaderboard`, `/api/achievements/verify`만 노출하는 골격이다. 클라이언트는 오프라인 우선이라 server는 옵션 의존이며, M6+에서 SQLite + Drizzle 연결과 실제 API 구현이 들어간다. Vite tree-shake는 client 빌드에 hono를 포함하지 않으므로 워크스페이스 추가만으로는 client 번들에 영향이 없다.
 
 ## 8. 관련 문서
 

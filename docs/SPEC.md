@@ -222,7 +222,17 @@ interface HistoryEntry {
   pgn: string;           // chess.js가 출력한 SAN PGN(모험은 빈 문자열)
   movesCount: number;
 }
+
+/** 모험 도전과제 정의 (M5). */
+interface AchievementDef {
+  id: string;            // 'first-clear' | 'no-undo-run' | 'assassins-clear' | 'item-collector' | 'legendary-find' …
+  name: string;
+  description: string;
+  reward: number;        // 별의 조각
+}
 ```
+
+도전과제 잠금해제 ID는 `MetaProgress.unlockedLocations` 배열에 누적된다(필드명이 "장소" 함의이지만 SPEC §4.3 이후 도전과제도 함께 수용하기로 결정). `evaluateAchievementsOnRunEnd(run, outcome, meta)`는 모험 런 종료 시점에 조건을 평가해 새로 충족된 도전과제를 반환하며, 호출처는 `meta.unlockedLocations.push` + `meta.totalStarShards += reward`로 합산한다.
 
 ## 5. Combat & Edge Cases (Adventure Mode)
 

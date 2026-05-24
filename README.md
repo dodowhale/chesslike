@@ -22,11 +22,12 @@
 | M0 공통 기반 | ✅ 완료 |
 | M1 클래식 공통 + 싱글 | ✅ 완료 |
 | M2 클래식 로컬멀티 | ✅ 완료 |
-| M3 모험 모드 MVP | ✅ 완료 (실제 보드 전투는 M5로 위임) |
+| M3 모험 모드 MVP | ✅ 완료 |
 | M4 메타 진행 + 추가 콘텐츠 | ✅ 완료 |
-| M5 폴리시 | ⏳ 진행 예정 |
+| M5 폴리시 | ✅ 완료 (외부 자산은 M6+) |
+| M6+ 후속 (자산·확장·인프라) | ⏳ TODO에 별도 섹션 |
 
-자세한 진행 항목은 [docs/TODO.md](./docs/TODO.md) 참조.
+자세한 진행 항목과 M6+ 후속 작업은 [docs/TODO.md](./docs/TODO.md) 참조.
 
 ## 🎮 모드별 한눈에 보기
 
@@ -39,10 +40,12 @@
 ## 🛠 기술 스택
 
 - **Frontend**: SolidJS 1.9, Phaser 3.86, Tailwind CSS 4
-- **Runtime**: Bun 1.3 (workspaces: `client/` + `shared/`)
-- **Backend**: Hono + SQLite (M5/M6 옵션)
+- **Runtime**: Bun 1.3 (workspaces: `client/` + `server/` + `shared/`)
+- **Backend**: Hono (헬스체크 + 랭킹/도전과제 API 골격, SQLite는 M6+)
 - **Chess**: chess.js (룰/PGN), Stockfish 18 lite-single (WASM Web Worker)
 - **Storage**: IndexedDB (idb-keyval) + localStorage 백업
+- **Audio**: Web Audio API (Web Audio 사인파 SFX placeholder, 정식 BGM/SFX 음원은 M6+)
+- **Deploy**: vercel.json SPA rewrite + Vite build outputDirectory
 
 ## 📂 프로젝트 구조
 
@@ -66,7 +69,11 @@
 │   │   │   └── i18n/            # ko/en 사전
 │   │   └── styles/
 ├── shared/src/                  # 모드/타입 정의 (Mode, Classic, Adventure, GameState, ClockSnapshot, GlobalSettings)
+├── server/                      # Hono API 스켈레톤 (헬스체크 + 랭킹/도전과제 placeholder)
+│   ├── package.json
+│   └── src/index.ts
 ├── scripts/                     # generate-piece-placeholders, copy-stockfish (postinstall)
+├── vercel.json                  # 배포 설정 (SPA rewrite + outputDirectory)
 └── docs/                        # 기획·기술 문서
 ```
 
@@ -116,8 +123,20 @@ bun run gen:placeholders
 
 ```js
 __chesslike.game.gameStore           // 게임 상태 (board, turn, ui, adventure)
-__chesslike.game.handleSquareClick   // 보드 클릭 시뮬레이션
+__chesslike.game.handleSquareClick   // 클래식 보드 클릭 시뮬레이션
 __chesslike.bus                      // eventBus 인스턴스
 ```
 
 production 빌드에서는 자동 제거됩니다.
+
+## 🛣 M6+ 후속
+
+코드 측 모든 마일스톤(M0~M5)은 완료된 상태이며, 다음은 외부 자산·콘텐츠 확장·인프라 위주입니다:
+
+- **외부 자산** — 정식 도트 에셋(기물·보드·UI·캐릭터·보스·아이템), BGM 5트랙, SFX 패키지
+- **Phaser 보드 강화** — sprite identity 기반 리팩토링 → 기물 tween, 드래그·드롭, HP 변화 애니메이션
+- **AI 강화** — 보스 전용 강한 AI, 일반 모험 AI를 random에서 약한 Stockfish로
+- **콘텐츠 확장** — 요새단/혼돈단 캐릭터, 도전과제 5→20종, 통계 화면, 이벤트/아이템 풀 확장
+- **서버 활성화** — SQLite + Drizzle 스키마, 랭킹/도전과제 검증, 인증
+- **품질** — 단위·E2E 테스트, CI/CD, 코드 스플릿, Lighthouse 검증
+- **배포** — Vercel/Fly.io 환경 검증, server 별도 배포

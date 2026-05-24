@@ -21,9 +21,12 @@
 | `/adventure/run/boss` | AdventureBoss | 막 보스 (MVP 자동 시뮬레이션) |
 | `/adventure/run/inventory` | AdventureInventory | 슬롯 장착 + 글로벌 모디파이어 |
 | `/adventure/run/result` | AdventureResult | 런 결과 + 별의 조각 정산 |
-| `/meta` | MetaProgress | 해금 트리 (캐릭터/아이템 풀/영구 장식품) |
+| `/meta` | MetaProgress | 해금 트리 (캐릭터/아이템 풀/영구 장식품), 50조각+ 확인 다이얼로그 |
+| `/achievements` | Achievements | 도전과제 진행도 (5종 데이터, 런 종료 시 자동 평가) |
 
-라우터는 `@solidjs/router` 사용. 모험 라우트들은 `activeRun` 전역 시그널을 공유하며, 컨트롤러가 없으면 `/adventure`로 자동 리다이렉트.
+라우터는 `@solidjs/router` 사용. 모험 라우트들은 `activeRun` 전역 시그널을 공유하며, 컨트롤러가 없으면 `/adventure`로 자동 리다이렉트한다.
+
+`/adventure/run/battle`과 `/adventure/run/boss`는 M5부터 실제 보드 인터랙션. `controller.enterBoardNode()`로 `AdventureChessManager` 활성화 → BoardScene이 piece HP 바를 그리고 사용자 클릭 → `setAdventureClickHandler` → `controller.attemptBoardMove(uci)` → AI random 응답 → `checkBoardEndCondition`이 SPEC §4.1(일반)/§4.2(보스) 룰로 종료 결정.
 
 ## 1. 전체 화면 전이도
 
