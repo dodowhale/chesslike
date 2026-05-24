@@ -19,6 +19,14 @@ const PIECE_KEY: Record<string, string> = {
   k: 'bK', q: 'bQ', r: 'bR', b: 'bB', n: 'bN', p: 'bP',
 };
 
+interface PieceSprite {
+  container: Phaser.GameObjects.Container;
+  pieceChar: string;
+  image: Phaser.GameObjects.Image;
+  hpBg?: Phaser.GameObjects.Rectangle;
+  hpFg?: Phaser.GameObjects.Rectangle;
+}
+
 const FILES = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'] as const;
 
 function squareToFileRank(square: string): { file: number; rank: number } | null {
@@ -42,6 +50,8 @@ export class BoardScene extends Phaser.Scene {
   private currentState: BoardRenderState | null = null;
   private offReady: (() => void) | null = null;
   private offState: (() => void) | null = null;
+  private sprites = new Map<string, PieceSprite>();
+  private activeTween: Phaser.Tweens.Tween | null = null;
 
   constructor() {
     super('Board');
@@ -71,6 +81,11 @@ export class BoardScene extends Phaser.Scene {
       this.offReady = null;
       this.offState?.();
       this.offState = null;
+      this.tweens.killAll();
+      for (const square of Array.from(this.sprites.keys())) {
+        this.destroyPieceSprite(square);
+      }
+      this.activeTween = null;
     };
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, teardown);
     this.events.once(Phaser.Scenes.Events.DESTROY, teardown);
@@ -149,7 +164,6 @@ export class BoardScene extends Phaser.Scene {
   private render(): void {
     if (!this.currentState) return;
     this.overlayLayer.removeAll(true);
-    this.pieceLayer.removeAll(true);
 
     const {
       fen,
@@ -171,12 +185,68 @@ export class BoardScene extends Phaser.Scene {
     if (checkSquare) this.drawTile(checkSquare, CHECK, 0.4);
     if (hintFrom && hintTo) this.drawHintArrow(hintFrom, hintTo);
 
-    const [position] = fen.split(' ');
-    if (!position) return;
+    const desired = this.parseFenPosition(fen);
     const hpMap = new Map<string, { hp: number; maxHp: number }>();
     if (pieceHps) {
       for (const p of pieceHps) hpMap.set(p.square, { hp: p.hp, maxHp: p.maxHp });
     }
+    // Task 2: instant only. Task 3에서 lastMove + !noPieceAnim 분기로 applyAnimated 추가.
+    this.applyInstant(desired, hpMap);
+  }
+
+  private createPieceSprite(
+    square: string,
+    pieceChar: string,
+    hpInfo?: { hp: number; maxHp: number },
+  ): PieceSprite {
+    const px = this.squareToPixel(square);
+    const x = px?.x ?? 0;
+    const y = px?.y ?? 0;
+    const container = this.add.container(x, y);
+    const textureKey = PIECE_KEY[pieceChar] ?? '';
+    const image = this.add.image(0, 0, textureKey);
+    image.setDisplaySize(TILE - 4, TILE - 4);
+    container.add(image);
+    this.pieceLayer.add(container);
+
+    const sprite: PieceSprite = { container, pieceChar, image };
+    if (hpInfo) {
+      this.attachHpBar(sprite, hpInfo.hp, hpInfo.maxHp);
+    }
+    return sprite;
+  }
+
+  private attachHpBar(sprite: PieceSprite, hp: number, maxHp: number): void {
+    const w = TILE - 12;
+    const h = 4;
+    const yOff = TILE / 2 - 6;
+    const pct = Math.max(0, Math.min(1, maxHp > 0 ? hp / maxHp : 0));
+    const color = pct > 0.5 ? 0x22c55e : pct > 0.2 ? 0xeab308 : 0xef4444;
+    if (!sprite.hpBg) {
+      sprite.hpBg = this.add.rectangle(0, yOff, w, h, 0x1f2937, 0.85);
+      sprite.container.add(sprite.hpBg);
+    }
+    if (!sprite.hpFg) {
+      sprite.hpFg = this.add.rectangle(-w / 2, yOff, w * pct, h, color, 0.95);
+      sprite.hpFg.setOrigin(0, 0.5);
+      sprite.container.add(sprite.hpFg);
+    } else {
+      sprite.hpFg.width = w * pct;
+      sprite.hpFg.fillColor = color;
+    }
+  }
+
+  private destroyPieceSprite(square: string): void {
+    const s = this.sprites.get(square);
+    if (!s) return;
+    s.container.destroy();
+    this.sprites.delete(square);
+  }
+
+  private parseFenPosition(fen: string): Map<string, string> {
+    const desired = new Map<string, string>();
+    const [position] = fen.split(' ');
+    if (!position) return desired;
     const ranks = position.split('/');
     for (let r = 0; r < 8; r++) {
       const rankStr = ranks[r];
@@ -187,34 +257,51 @@ export class BoardScene extends Phaser.Scene {
           file += Number(ch);
           continue;
         }
-        const key = PIECE_KEY[ch];
-        if (key && file < 8) {
+        if (file < 8 && PIECE_KEY[ch]) {
           const square = fileRankToSquare(file, 8 - r);
-          const px = this.squareToPixel(square);
-          if (px) {
-            const sprite = this.add.image(px.x, px.y, key);
-            sprite.setDisplaySize(TILE - 4, TILE - 4);
-            this.pieceLayer.add(sprite);
-            const hp = hpMap.get(square);
-            if (hp) this.drawHpBar(px.x, px.y, hp.hp, hp.maxHp);
-          }
+          desired.set(square, ch);
         }
         file += 1;
       }
     }
+    return desired;
   }
 
-  private drawHpBar(cx: number, cy: number, hp: number, maxHp: number): void {
-    const w = TILE - 12;
-    const h = 4;
-    const y = cy + TILE / 2 - 6;
-    const pct = Math.max(0, Math.min(1, maxHp > 0 ? hp / maxHp : 0));
-    const bg = this.add.rectangle(cx, y, w, h, 0x1f2937, 0.85);
-    this.pieceLayer.add(bg);
-    const color = pct > 0.5 ? 0x22c55e : pct > 0.2 ? 0xeab308 : 0xef4444;
-    const fg = this.add.rectangle(cx - w / 2, y, w * pct, h, color, 0.95);
-    fg.setOrigin(0, 0.5);
-    this.pieceLayer.add(fg);
+  private applyInstant(
+    desired: Map<string, string>,
+    hpMap: Map<string, { hp: number; maxHp: number }>,
+  ): void {
+    // 1. 제거
+    for (const square of Array.from(this.sprites.keys())) {
+      if (!desired.has(square)) this.destroyPieceSprite(square);
+    }
+    // 2. 추가/갱신
+    for (const [square, pieceChar] of desired) {
+      const existing = this.sprites.get(square);
+      if (!existing) {
+        const sprite = this.createPieceSprite(square, pieceChar, hpMap.get(square));
+        this.sprites.set(square, sprite);
+        continue;
+      }
+      if (existing.pieceChar !== pieceChar) {
+        this.destroyPieceSprite(square);
+        const sprite = this.createPieceSprite(square, pieceChar, hpMap.get(square));
+        this.sprites.set(square, sprite);
+        continue;
+      }
+      const px = this.squareToPixel(square);
+      if (px) existing.container.setPosition(px.x, px.y);
+
+      const hp = hpMap.get(square);
+      if (hp) {
+        this.attachHpBar(existing, hp.hp, hp.maxHp);
+      } else if (existing.hpBg || existing.hpFg) {
+        existing.hpBg?.destroy();
+        existing.hpFg?.destroy();
+        existing.hpBg = undefined;
+        existing.hpFg = undefined;
+      }
+    }
   }
 
   private applyOrientation(orientation: 'w' | 'b', instant: boolean): void {
