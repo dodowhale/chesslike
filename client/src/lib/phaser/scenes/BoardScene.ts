@@ -1,13 +1,11 @@
 import Phaser from 'phaser';
-import { eventBus, type BoardRenderState, type LastMove } from '../bridge/eventBus';
+import { eventBus, type BoardRenderState, type LastMove, type BoardTheme } from '../bridge/eventBus';
 
 const TILE = 56;
 const BOARD_SIZE = TILE * 8;
 const MARGIN_X = 24;
 const MARGIN_Y = 24;
 
-const LIGHT = 0xf0d9b5;
-const DARK = 0xb58863;
 const HIGHLIGHT = 0x6dd47e;
 const SELECTED = 0xffd23f;
 const LAST_MOVE = 0xf4a261;
@@ -17,6 +15,12 @@ const HINT = 0x4dabf7;
 const PIECE_KEY: Record<string, string> = {
   K: 'wK', Q: 'wQ', R: 'wR', B: 'wB', N: 'wN', P: 'wP',
   k: 'bK', q: 'bQ', r: 'bR', b: 'bB', n: 'bN', p: 'bP',
+};
+
+const THEME_COLORS: Record<BoardTheme, { light: number; dark: number }> = {
+  default: { light: 0xf0d9b5, dark: 0xb58863 },
+  forest:  { light: 0xd4e09b, dark: 0x5b8a3a },
+  ocean:   { light: 0xcce6e8, dark: 0x3e7a8b },
 };
 
 interface PieceSprite {
@@ -47,6 +51,7 @@ export class BoardScene extends Phaser.Scene {
   private pieceLayer!: Phaser.GameObjects.Container;
   private coordLayer!: Phaser.GameObjects.Container;
   private orientation: 'w' | 'b' = 'w';
+  private theme: BoardTheme = 'default';
   private currentState: BoardRenderState | null = null;
   private offReady: (() => void) | null = null;
   private offState: (() => void) | null = null;
@@ -68,7 +73,10 @@ export class BoardScene extends Phaser.Scene {
     this.drawTilesAndCoords();
 
     this.offState = eventBus.on('state:board', (payload) => {
+      const themeChanged = this.theme !== (payload.theme ?? 'default');
+      this.theme = payload.theme ?? 'default';
       this.currentState = payload;
+      if (themeChanged) this.drawTilesAndCoords();
       if (payload.orientation !== this.orientation) {
         this.applyOrientation(payload.orientation, payload.instant === true);
       } else {
@@ -116,9 +124,10 @@ export class BoardScene extends Phaser.Scene {
   private drawTilesAndCoords(): void {
     this.tileLayer.removeAll(true);
     this.coordLayer.removeAll(true);
+    const { light, dark } = THEME_COLORS[this.theme];
     for (let r = 0; r < 8; r++) {
       for (let f = 0; f < 8; f++) {
-        const color = (r + f) % 2 === 0 ? LIGHT : DARK;
+        const color = (r + f) % 2 === 0 ? light : dark;
         const tile = this.add.rectangle(
           f * TILE + TILE / 2,
           r * TILE + TILE / 2,
