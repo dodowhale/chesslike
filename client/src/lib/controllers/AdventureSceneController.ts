@@ -401,8 +401,6 @@ export class AdventureRunController implements SceneController {
     if (!this.boardChess) return;
     if (this.boardChess.turn() !== 'b') return;
     // 약한 random AI (M5 MVP). 후속에서 Stockfish 또는 보스 전용 AI로 교체.
-    const moves = this.boardChess.moves();
-    void moves; // moves()는 적용된 무브 로그. legal moves는 아래.
     const legalUcis = this.collectLegalUcis('b');
     if (legalUcis.length === 0) {
       this.checkBoardEndCondition('b');

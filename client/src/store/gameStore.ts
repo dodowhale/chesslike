@@ -188,6 +188,7 @@ export function resetBoard(): void {
     aiThinking: false,
     localRequest: undefined,
   });
+  nextEmitInstant = true;
   emitBoard();
 }
 
@@ -327,6 +328,7 @@ export function undoMove(): MoveDescriptor | undefined {
   if (state.ui.status.kind === 'ongoing') {
     setState('ui', 'interactive', true);
   }
+  nextEmitInstant = true;
   emitBoard();
   return popped;
 }
@@ -344,6 +346,7 @@ export function rewindTo(index: number): void {
     pendingPromotion: undefined,
   });
   refreshStatus();
+  nextEmitInstant = true;
   emitBoard();
 }
 
@@ -380,13 +383,6 @@ export function setAdventurePieceHps(
   hps: { square: string; hp: number; maxHp: number }[] | undefined,
 ): void {
   setState('ui', 'adventurePieceHps', hps);
-  emitBoard();
-}
-
-export function setAdventureBoardFen(fen: string): void {
-  setState({ board: fen });
-  // emitBoard는 setAdventureBoardSnapshot에서 합쳐 발화. 단독 호출은 stale HP를 그릴 수
-  // 있으므로 호출처는 setAdventureBoardSnapshot 사용 권장.
   emitBoard();
 }
 
