@@ -76,7 +76,7 @@ function selectTheme(): BoardTheme {
   return 'default';
 }
 
-function selectCharacter(): CharacterId {
+export function getActiveCharacterId(): CharacterId {
   if (state.mode === 'adventure' && state.adventure) {
     const id = state.adventure.characterId;
     if (id === 'assassins' || id === 'saints') return id;
@@ -101,7 +101,7 @@ function emitBoard(opts: { lastMove?: LastMove; instant?: boolean } = {}): void 
     pieceHps: state.ui.adventurePieceHps,
     noPieceAnim: reducedMotion,
     theme: selectTheme(),
-    characterId: selectCharacter(),
+    characterId: getActiveCharacterId(),
   };
   nextEmitInstant = false;
   eventBus.emit('state:board', payload);
