@@ -10,84 +10,244 @@ const SIZE = 32;
 const PIECES = ['K', 'Q', 'R', 'B', 'N', 'P'] as const;
 const SIDES = ['w', 'b'] as const;
 
-const PIECE_TINT: Record<(typeof PIECES)[number], Pixel> = {
-  K: [255, 196, 96, 255],
-  Q: [216, 96, 216, 255],
-  R: [232, 96, 96, 255],
-  B: [96, 168, 232, 255],
-  N: [104, 200, 120, 255],
-  P: [232, 168, 96, 255],
-};
+const PIECE_COLORS = {
+  wFill: [0xf5, 0xe9, 0xd3, 0xff] as const,    // 옅은 아이보리 우드
+  wOutline: [0x2a, 0x20, 0x17, 0xff] as const, // 다크 브라운
+  bFill: [0x2f, 0x23, 0x1a, 0xff] as const,    // 짙은 우드
+  bOutline: [0x7a, 0x5a, 0x40, 0xff] as const, // mid 브라운
+} as const;
 
-const FONT_5x7: Record<(typeof PIECES)[number], readonly string[]> = {
-  K: ['X...X', 'X..X.', 'X.X..', 'XX...', 'X.X..', 'X..X.', 'X...X'],
-  Q: ['.XXX.', 'X...X', 'X...X', 'X.X.X', 'X..XX', '.XXX.', '....X'],
-  R: ['XXXX.', 'X...X', 'X...X', 'XXXX.', 'X.X..', 'X..X.', 'X...X'],
-  B: ['XXXX.', 'X...X', 'X...X', 'XXXX.', 'X...X', 'X...X', 'XXXX.'],
-  N: ['X...X', 'XX..X', 'X.X.X', 'X..XX', 'X...X', 'X...X', 'X...X'],
-  P: ['XXXX.', 'X...X', 'X...X', 'XXXX.', 'X....', 'X....', 'X....'],
+const PIECE_GLYPH: Record<(typeof PIECES)[number], readonly string[]> = {
+  K: [
+    '                                ',
+    '                                ',
+    '              ..                ',
+    '              .X.               ',
+    '            .....X..            ',
+    '            .XXXXX.             ',
+    '            .XXXXX.             ',
+    '              ..                ',
+    '        ..   ....   ..          ',
+    '       .X. .XXXXXX. .X.         ',
+    '      .XX..XXXXXXXX..XX.        ',
+    '      .XXX.XXXXXXXX.XXX.        ',
+    '      .XXXXXXXXXXXXXXXX.        ',
+    '       .XXXXXXXXXXXXXX.         ',
+    '        ..............          ',
+    '        .XXXXXXXXXXXX.          ',
+    '       .XXXXXXXXXXXXXX.         ',
+    '       .XXXXXXXXXXXXXX.         ',
+    '        .XXXXXXXXXXXX.          ',
+    '         .XXXXXXXXXX.           ',
+    '          .XXXXXXXX.            ',
+    '          .XXXXXXXX.            ',
+    '         .XXXXXXXXXX.           ',
+    '        .XXXXXXXXXXXX.          ',
+    '       .XXXXXXXXXXXXXX.         ',
+    '      .XXXXXXXXXXXXXXXX.        ',
+    '      ..................        ',
+    '       .XXXXXXXXXXXXXX.         ',
+    '      .XXXXXXXXXXXXXXXX.        ',
+    '      .XXXXXXXXXXXXXXXX.        ',
+    '      ....................      ',
+    '                                ',
+  ],
+  Q: [
+    '                                ',
+    '                                ',
+    '                                ',
+    '       .   .   .   .   .        ',
+    '      .X. .X. .X. .X. .X.       ',
+    '      .X. .X. .X. .X. .X.       ',
+    '      .XX.XXX.XXX.XXX.XX.       ',
+    '      .XXXXXXXXXXXXXXXX.        ',
+    '       ................         ',
+    '        .XXXXXXXXXXXXXX.        ',
+    '       .XXXXXXXXXXXXXXXX.       ',
+    '       .XXXXXXXXXXXXXXXX.       ',
+    '        .XXXXXXXXXXXXXX.        ',
+    '         .XXXXXXXXXXXX.         ',
+    '          .XXXXXXXXXX.          ',
+    '           .XXXXXXXX.           ',
+    '           .XXXXXXXX.           ',
+    '          .XXXXXXXXXX.          ',
+    '         .XXXXXXXXXXXX.         ',
+    '        .XXXXXXXXXXXXXX.        ',
+    '       .XXXXXXXXXXXXXXXX.       ',
+    '      .XXXXXXXXXXXXXXXXXX.      ',
+    '      .XXXXXXXXXXXXXXXXXX.      ',
+    '       ..................       ',
+    '       .XXXXXXXXXXXXXXXX.       ',
+    '      .XXXXXXXXXXXXXXXXXX.      ',
+    '      .XXXXXXXXXXXXXXXXXX.      ',
+    '      ....................      ',
+    '                                ',
+    '                                ',
+    '                                ',
+    '                                ',
+  ],
+  R: [
+    '                                ',
+    '                                ',
+    '                                ',
+    '                                ',
+    '                                ',
+    '       ...  ....  ....  ...     ',
+    '      .XXX..XXXX..XXXX..XXX.    ',
+    '      .XXX..XXXX..XXXX..XXX.    ',
+    '      .XXX..XXXX..XXXX..XXX.    ',
+    '      .XXXXXXXXXXXXXXXXXXXX.    ',
+    '      .XXXXXXXXXXXXXXXXXXXX.    ',
+    '       ....................     ',
+    '        .XXXXXXXXXXXXXXXX.      ',
+    '        .XXXXXXXXXXXXXXXX.      ',
+    '        .XXXXXXXXXXXXXXXX.      ',
+    '        .XXXXXXXXXXXXXXXX.      ',
+    '        .XXXXXXXXXXXXXXXX.      ',
+    '        .XXXXXXXXXXXXXXXX.      ',
+    '        .XXXXXXXXXXXXXXXX.      ',
+    '        .XXXXXXXXXXXXXXXX.      ',
+    '        .XXXXXXXXXXXXXXXX.      ',
+    '        .XXXXXXXXXXXXXXXX.      ',
+    '        .XXXXXXXXXXXXXXXX.      ',
+    '       .XXXXXXXXXXXXXXXXXX.     ',
+    '      .XXXXXXXXXXXXXXXXXXXX.    ',
+    '      .XXXXXXXXXXXXXXXXXXXX.    ',
+    '      ....................      ',
+    '                                ',
+    '                                ',
+    '                                ',
+    '                                ',
+    '                                ',
+  ],
+  B: [
+    '                                ',
+    '                                ',
+    '                                ',
+    '                                ',
+    '              ..                ',
+    '             .XX.               ',
+    '              ..                ',
+    '             .XX.               ',
+    '            .XXXX.              ',
+    '           .XXXXXX.             ',
+    '          .XXXX.XX.             ',
+    '          .XX.XXXX.             ',
+    '          .XXXXXXX.             ',
+    '           .XXXXX.              ',
+    '            .XXX.               ',
+    '            .XXX.               ',
+    '           .XXXXX.              ',
+    '          .XXXXXXX.             ',
+    '         .XXXXXXXXX.            ',
+    '        .XXXXXXXXXXX.           ',
+    '         .XXXXXXXXX.            ',
+    '          .........             ',
+    '        .XXXXXXXXXXX.           ',
+    '       .XXXXXXXXXXXXX.          ',
+    '      .XXXXXXXXXXXXXXX.         ',
+    '      ...............           ',
+    '                                ',
+    '                                ',
+    '                                ',
+    '                                ',
+    '                                ',
+    '                                ',
+  ],
+  N: [
+    '                                ',
+    '                                ',
+    '                                ',
+    '                                ',
+    '            ......              ',
+    '           .XXXXXX.             ',
+    '          .XXXXXXXX.            ',
+    '         .XXXXXXXXX.            ',
+    '        .XXXXX..XXXX.           ',
+    '       .XXXX..XXXXX.            ',
+    '       .XXX.X..XXXX.            ',
+    '      .XXXX. .XXXXX.            ',
+    '      .XX.. .XXXXXX.            ',
+    '       ..   .XXXXXX.            ',
+    '            .XXXXXX.            ',
+    '           .XXXXXXX.            ',
+    '          .XXXXXXXX.            ',
+    '         .XXXXXXXXX.            ',
+    '        .XXXXXXXXXX.            ',
+    '       .XXXXXXXXXXX.            ',
+    '       .XXXXXXXXXXX.            ',
+    '       .XXXXXXXXXXX.            ',
+    '       .XXXXXXXXXXX.            ',
+    '       .XXXXXXXXXXX.            ',
+    '      .XXXXXXXXXXXXX.           ',
+    '      .XXXXXXXXXXXXX.           ',
+    '      ...............           ',
+    '                                ',
+    '                                ',
+    '                                ',
+    '                                ',
+    '                                ',
+  ],
+  P: [
+    '                                ',
+    '                                ',
+    '                                ',
+    '                                ',
+    '              ....              ',
+    '             .XXXX.             ',
+    '            .XXXXXX.            ',
+    '            .XXXXXX.            ',
+    '             .XXXX.             ',
+    '              ....              ',
+    '              .XX.              ',
+    '            .XXXXXX.            ',
+    '           .XXXXXXXX.           ',
+    '          .XXXXXXXXXX.          ',
+    '           .XXXXXXXX.           ',
+    '             .XXXX.             ',
+    '           .XXXXXXXX.           ',
+    '          .XXXXXXXXXX.          ',
+    '         .XXXXXXXXXXXX.         ',
+    '        .XXXXXXXXXXXXXX.        ',
+    '        .XXXXXXXXXXXXXX.        ',
+    '       .XXXXXXXXXXXXXXXX.       ',
+    '      .XXXXXXXXXXXXXXXXXX.      ',
+    '      .XXXXXXXXXXXXXXXXXX.      ',
+    '      ....................      ',
+    '                                ',
+    '                                ',
+    '                                ',
+    '                                ',
+    '                                ',
+    '                                ',
+    '                                ',
+  ],
 };
 
 function makePixels(side: (typeof SIDES)[number], type: (typeof PIECES)[number]): Pixel[][] {
-  const isWhite = side === 'w';
-  const bg: Pixel = isWhite ? [240, 240, 235, 255] : [40, 40, 50, 255];
-  const fg: Pixel = isWhite ? [30, 30, 40, 255] : [240, 240, 235, 255];
-  const accent = PIECE_TINT[type];
+  const fill: Pixel = side === 'w'
+    ? ([...PIECE_COLORS.wFill] as unknown as Pixel)
+    : ([...PIECE_COLORS.bFill] as unknown as Pixel);
+  const outline: Pixel = side === 'w'
+    ? ([...PIECE_COLORS.wOutline] as unknown as Pixel)
+    : ([...PIECE_COLORS.bOutline] as unknown as Pixel);
+  const transparent: Pixel = [0, 0, 0, 0];
 
   const grid: Pixel[][] = Array.from({ length: SIZE }, () =>
-    Array.from({ length: SIZE }, () => [0, 0, 0, 0] as Pixel),
+    Array.from({ length: SIZE }, () => transparent),
   );
 
-  // Rounded-corner background fill
+  const glyph = PIECE_GLYPH[type];
   for (let y = 0; y < SIZE; y++) {
+    const row = glyph[y];
+    if (!row) continue;
     for (let x = 0; x < SIZE; x++) {
-      const dx = Math.min(x, SIZE - 1 - x);
-      const dy = Math.min(y, SIZE - 1 - y);
-      if (dx === 0 && dy === 0) continue;
-      if (dx === 0 && dy === 1) continue;
-      if (dx === 1 && dy === 0) continue;
-      const row = grid[y]!;
-      row[x] = bg;
+      const ch = row[x];
+      if (ch === 'X') grid[y]![x] = fill;
+      else if (ch === '.') grid[y]![x] = outline;
+      // space stays transparent
     }
   }
-
-  // Border
-  for (let i = 2; i < SIZE - 2; i++) {
-    const top = grid[1]!;
-    const bot = grid[SIZE - 2]!;
-    top[i] = accent;
-    bot[i] = accent;
-    const rowI = grid[i]!;
-    rowI[1] = accent;
-    rowI[SIZE - 2] = accent;
-  }
-
-  // 5x7 glyph scaled 3x → 15x21, centered
-  const glyph = FONT_5x7[type];
-  const scale = 3;
-  const glyphW = 5 * scale;
-  const glyphH = 7 * scale;
-  const offX = Math.floor((SIZE - glyphW) / 2);
-  const offY = Math.floor((SIZE - glyphH) / 2);
-
-  for (let gy = 0; gy < 7; gy++) {
-    const lineRaw = glyph[gy];
-    if (!lineRaw) continue;
-    const line = lineRaw;
-    for (let gx = 0; gx < 5; gx++) {
-      if (line[gx] !== 'X') continue;
-      for (let sy = 0; sy < scale; sy++) {
-        for (let sx = 0; sx < scale; sx++) {
-          const py = offY + gy * scale + sy;
-          const px = offX + gx * scale + sx;
-          if (py < 0 || py >= SIZE || px < 0 || px >= SIZE) continue;
-          const row = grid[py]!;
-          row[px] = fg;
-        }
-      }
-    }
-  }
-
   return grid;
 }
 
@@ -158,6 +318,19 @@ function encodePng(pixels: Pixel[][]): Buffer {
     chunk('IDAT', idat),
     chunk('IEND', iend),
   ]);
+}
+
+// Glyph integrity assertion — 32 rows × 32 chars per piece
+for (const type of PIECES) {
+  const glyph = PIECE_GLYPH[type];
+  if (glyph.length !== SIZE) {
+    throw new Error(`PIECE_GLYPH[${type}]: expected ${SIZE} rows, got ${glyph.length}`);
+  }
+  glyph.forEach((row, i) => {
+    if (row.length !== SIZE) {
+      throw new Error(`PIECE_GLYPH[${type}][${i}]: expected ${SIZE} chars, got ${row.length}`);
+    }
+  });
 }
 
 const here = dirname(fileURLToPath(import.meta.url));
