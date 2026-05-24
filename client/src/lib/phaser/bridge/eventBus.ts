@@ -6,12 +6,28 @@ export interface BoardPieceHp {
   maxHp: number;
 }
 
+export type LastMoveKind = 'normal' | 'capture' | 'castling' | 'en-passant' | 'promotion';
+
+export interface LastMove {
+  from: string;
+  to: string;
+  kind: LastMoveKind;
+  /** kind='castling' 시 룩의 from/to. */
+  rookFrom?: string;
+  rookTo?: string;
+  /** kind='en-passant' 시 캡처되는 폰의 실제 칸 (to와 다름). */
+  victimSquare?: string;
+  /** kind='promotion' 시 승급된 기물 종류 (소문자: 'q'|'r'|'b'|'n'). */
+  promotedTo?: string;
+  /** 피격된 sprite의 PIECE_KEY (예: 'bP', 'wN'). capture/en-passant/promotion(캡처 동반) 시 채움. */
+  capturedKey?: string;
+}
+
 export interface BoardRenderState {
   fen: string;
   selected?: string;
   highlights: readonly string[];
-  lastMoveFrom?: string;
-  lastMoveTo?: string;
+  lastMove?: LastMove;
   checkSquare?: string;
   hintFrom?: string;
   hintTo?: string;

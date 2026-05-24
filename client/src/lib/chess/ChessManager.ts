@@ -1,5 +1,6 @@
 import { Chess, type Square, type PieceSymbol, type Color } from 'chess.js';
 import { INITIAL_FEN } from '@shared/game';
+import type { LastMove, LastMoveKind } from '@/lib/phaser/bridge/eventBus';
 
 // chess.js 타입을 도메인 외부로 노출하지 않기 위해 ChessManager에서 재export.
 // 외부 코드는 항상 '@/lib/chess/ChessManager'에서 이 타입들을 import해야 한다.
@@ -90,6 +91,54 @@ function enPassantCapturedSquare(to: Square, color: Color): Square {
   const rank = Number(to.charAt(1));
   const capturedRank = color === 'w' ? rank - 1 : rank + 1;
   return `${file}${capturedRank}` as Square;
+}
+
+const PIECE_KEY_FOR: Record<Color, Record<PieceSymbol, string>> = {
+  w: { p: 'wP', n: 'wN', b: 'wB', r: 'wR', q: 'wQ', k: 'wK' },
+  b: { p: 'bP', n: 'bN', b: 'bB', r: 'bR', q: 'bQ', k: 'bK' },
+};
+
+function rookSquaresForCastle(
+  kingFrom: Square,
+  kingTo: Square,
+): { rookFrom: Square; rookTo: Square } | null {
+  const fromFile = kingFrom.charAt(0);
+  const toFile = kingTo.charAt(0);
+  const rank = kingFrom.charAt(1);
+  if (fromFile !== 'e') return null;
+  if (toFile === 'g') return { rookFrom: `h${rank}` as Square, rookTo: `f${rank}` as Square };
+  if (toFile === 'c') return { rookFrom: `a${rank}` as Square, rookTo: `d${rank}` as Square };
+  return null;
+}
+
+export function toRichLastMove(move: MoveDescriptor): LastMove {
+  let kind: LastMoveKind;
+  if (move.promotion) kind = 'promotion';
+  else if (move.isCastle) kind = 'castling';
+  else if (move.isEnPassant) kind = 'en-passant';
+  else if (move.isCapture) kind = 'capture';
+  else kind = 'normal';
+
+  const rich: LastMove = { from: move.from, to: move.to, kind };
+
+  if (kind === 'castling') {
+    const rook = rookSquaresForCastle(move.from, move.to);
+    if (rook) {
+      rich.rookFrom = rook.rookFrom;
+      rich.rookTo = rook.rookTo;
+    }
+  }
+  if (kind === 'en-passant' && move.capturedSquare) {
+    rich.victimSquare = move.capturedSquare;
+  }
+  if (kind === 'promotion' && move.promotion) {
+    rich.promotedTo = move.promotion;
+  }
+  if (move.captured) {
+    const victimColor: Color = move.color === 'w' ? 'b' : 'w';
+    rich.capturedKey = PIECE_KEY_FOR[victimColor][move.captured];
+  }
+  return rich;
 }
 
 function toDescriptor(

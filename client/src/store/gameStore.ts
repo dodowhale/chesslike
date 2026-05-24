@@ -6,13 +6,14 @@ import { INITIAL_FEN, type GameState } from '@shared/game';
 import type { ClockSnapshot } from '@shared/clock';
 import {
   createChessManager,
+  toRichLastMove,
   type GameStatus,
   type MoveDescriptor,
   type Square,
   type Color,
   type PieceSymbol,
 } from '@/lib/chess/ChessManager';
-import { eventBus, type BoardRenderState } from '@/lib/phaser/bridge/eventBus';
+import { eventBus, type BoardRenderState, type LastMove } from '@/lib/phaser/bridge/eventBus';
 import { settings } from '@/store/settingsStore';
 
 export type LocalRequestKind = 'undo' | 'draw' | 'resign';
@@ -67,23 +68,22 @@ export const gameStore = state;
 
 let nextEmitInstant = false;
 
-function emitBoard(): void {
-  const lastMove = chess.lastMove();
-  const checkSquare = chess.isInCheck() ? chess.kingSquare(chess.turn()) : undefined;
+function emitBoard(opts: { lastMove?: LastMove; instant?: boolean } = {}): void {
+  const last = opts.lastMove ?? (chess.lastMove() ? toRichLastMove(chess.lastMove()!) : undefined);
+  const reducedMotion = settings.accessibility.reducedMotion;
   const payload: BoardRenderState = {
     fen: state.board,
     selected: state.ui.selected,
     highlights: state.ui.highlights,
-    lastMoveFrom: lastMove?.from,
-    lastMoveTo: lastMove?.to,
-    checkSquare,
+    lastMove: last,
+    checkSquare: chess.isInCheck() ? chess.kingSquare(chess.turn()) : undefined,
     hintFrom: state.ui.hint?.from,
     hintTo: state.ui.hint?.to,
     orientation: state.ui.orientation,
     interactive: state.ui.interactive,
-    instant: nextEmitInstant || settings.accessibility.reducedMotion,
+    instant: nextEmitInstant || opts.instant === true || reducedMotion,
     pieceHps: state.ui.adventurePieceHps,
-    noPieceAnim: settings.accessibility.reducedMotion,
+    noPieceAnim: reducedMotion,
   };
   nextEmitInstant = false;
   eventBus.emit('state:board', payload);
@@ -394,10 +394,12 @@ export function setAdventureBoardFen(fen: string): void {
 export function setAdventureBoardSnapshot(
   fen: string,
   hps: { square: string; hp: number; maxHp: number }[],
+  lastMove?: LastMove,
+  opts?: { instant?: boolean },
 ): void {
   setState('board', fen);
   setState('ui', 'adventurePieceHps', hps);
-  emitBoard();
+  emitBoard({ lastMove, instant: opts?.instant });
 }
 
 export function setAdventureSelection(

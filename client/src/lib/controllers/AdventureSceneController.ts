@@ -19,6 +19,8 @@ import {
   type AdventureMoveResult,
   type PieceState,
 } from '@/lib/chess/AdventureChessManager';
+import { toRichLastMove, type MoveDescriptor } from '@/lib/chess/ChessManager';
+import type { LastMove } from '@/lib/phaser/bridge/eventBus';
 import { persistRun } from '@/lib/adventure/runPersist';
 import {
   resetStatusOngoing,
@@ -350,7 +352,7 @@ export class AdventureRunController implements SceneController {
     });
     resetStatusOngoing();
     setInteractive(true);
-    this.syncBoard();
+    this.syncBoard(undefined, { instant: true });
   }
 
   /**
@@ -375,7 +377,7 @@ export class AdventureRunController implements SceneController {
     if (!this.boardChess) return undefined;
     const result = this.boardChess.tryMove(uci);
     if (!result.ok) return result;
-    this.syncBoard();
+    this.syncBoard(result.lastMove);
     if (this.checkBoardEndCondition('w')) return result;
     // 사용자 차례 끝 — 다음 프레임에 AI 응답
     queueMicrotask(() => this.scheduleAiReply());
@@ -396,7 +398,7 @@ export class AdventureRunController implements SceneController {
     const pick = legalUcis[Math.floor(Math.random() * legalUcis.length)]!;
     const result = this.boardChess.tryMove(pick);
     if (!result.ok) return;
-    this.syncBoard();
+    this.syncBoard(result.lastMove);
     this.checkBoardEndCondition('b');
   }
 
@@ -414,14 +416,15 @@ export class AdventureRunController implements SceneController {
     return ucis;
   }
 
-  private syncBoard(): void {
+  private syncBoard(move?: MoveDescriptor, opts?: { instant?: boolean }): void {
     if (!this.boardChess) return;
     const hps = this.boardChess.getPieces().map((p) => ({
       square: p.square,
       hp: p.hp,
       maxHp: p.maxHp,
     }));
-    setAdventureBoardSnapshot(this.boardChess.getFen(), hps);
+    const lastMove: LastMove | undefined = move ? toRichLastMove(move) : undefined;
+    setAdventureBoardSnapshot(this.boardChess.getFen(), hps, lastMove, opts);
   }
 
   /** 보드 종료 조건 검사. 처리되었다면 true. */

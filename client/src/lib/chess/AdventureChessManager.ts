@@ -54,6 +54,8 @@ export interface AdventureMoveResult {
   reason?: string;
   outcome: CombatOutcome;
   fen: string;
+  /** 보드가 이동한 케이스(damaged 제외)에서 chess.js MoveDescriptor. 컨트롤러가 LastMove로 합성. */
+  lastMove?: MoveDescriptor;
 }
 
 export interface AdventureChessManagerOptions {
@@ -175,9 +177,14 @@ export function createAdventureChessManager(opts: AdventureChessManagerOptions) 
       relocatePiece(attacker, real.move.from, real.move.to);
       if (real.move.promotion) {
         applyPromotion(attacker, real.move.promotion);
-        return { ok: true, outcome: { kind: 'promoted', pieceId: attacker.id, move: real.move }, fen: real.move.fen };
+        return {
+          ok: true,
+          outcome: { kind: 'promoted', pieceId: attacker.id, move: real.move },
+          fen: real.move.fen,
+          lastMove: real.move,
+        };
       }
-      return { ok: true, outcome: { kind: 'noop' }, fen: real.move.fen };
+      return { ok: true, outcome: { kind: 'noop' }, fen: real.move.fen, lastMove: real.move };
     }
 
     // 3. 데미지 계산
@@ -221,6 +228,7 @@ export function createAdventureChessManager(opts: AdventureChessManagerOptions) 
         move: real.move,
       },
       fen: real.move.fen,
+      lastMove: real.move,
     };
   }
 

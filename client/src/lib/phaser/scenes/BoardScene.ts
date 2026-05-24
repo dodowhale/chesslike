@@ -155,16 +155,17 @@ export class BoardScene extends Phaser.Scene {
       fen,
       selected,
       highlights,
-      lastMoveFrom,
-      lastMoveTo,
+      lastMove,
       checkSquare,
       hintFrom,
       hintTo,
       pieceHps,
     } = this.currentState;
 
-    if (lastMoveFrom) this.drawTile(lastMoveFrom, LAST_MOVE, 0.35);
-    if (lastMoveTo) this.drawTile(lastMoveTo, LAST_MOVE, 0.35);
+    if (lastMove) {
+      this.drawTile(lastMove.from, LAST_MOVE, 0.35);
+      this.drawTile(lastMove.to, LAST_MOVE, 0.35);
+    }
     if (selected) this.drawTile(selected, SELECTED, 0.5);
     for (const sq of highlights) this.drawHighlight(sq);
     if (checkSquare) this.drawTile(checkSquare, CHECK, 0.4);
