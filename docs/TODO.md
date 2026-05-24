@@ -144,16 +144,16 @@
 - [ ] SFX 패키지 (클릭/무브/캡처/체크/체크메이트/아이템 획득/레벨업 등)
 
 ### 코드 — Phaser 보드 인터랙션 강화
-- [ ] BoardScene을 sprite identity 유지 구조로 리팩토링 (pieceLayer.removeAll 제거)
-- [ ] 기물 이동 Tween (Idle/Move/Capture 200ms, 모션 감소 시 즉시)
+- [x] BoardScene을 sprite identity 유지 구조로 리팩토링 (pieceLayer.removeAll 제거)
+- [x] 기물 이동 Tween (Idle/Move/Capture 200ms, 모션 감소 시 즉시)
 - [ ] 드래그·드롭 입력 (클릭/탭과 공존, 합법수 미리보기)
-- [ ] HP 바 변화 애니메이션 (데미지 받을 때 시각 피드백)
+- [x] HP 바 변화 애니메이션 (데미지 받을 때 시각 피드백)
 - [ ] 보스 페이즈 시각 인터스티셜 (페이즈 클리어 → 다음 페이즈 진입 사이 효과)
 
 ### 코드 — AI 강화
 - [ ] 보스 전용 강한 AI (Stockfish 또는 페이즈별 사전 정의 무브 시퀀스)
 - [ ] 일반 모험 AI를 random에서 약한 Stockfish (Skill Level 1~3)로 교체
-- [ ] AI 차례 사이에 시각 지연 (사용자가 보스/적 응답을 인지하도록 300~500ms)
+- [ ] AI 차례 사이에 시각 지연 (사용자가 보스/적 응답을 인지하도록 300~500ms) — Tween 동기화용 250ms는 이미 적용됨, 추가 조정만 남음
 
 ### 코드 — 콘텐츠 확장
 - [ ] 요새단 캐릭터 (룩 강화 파티, M4 선택 사항)
