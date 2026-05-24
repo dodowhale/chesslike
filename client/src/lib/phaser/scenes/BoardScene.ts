@@ -229,7 +229,7 @@ export class BoardScene extends Phaser.Scene {
     const h = 4;
     const yOff = TILE / 2 - 6;
     const pct = Math.max(0, Math.min(1, maxHp > 0 ? hp / maxHp : 0));
-    const color = pct > 0.5 ? 0x22c55e : pct > 0.2 ? 0xeab308 : 0xef4444;
+    const color = this.hpColor(pct);
     if (!sprite.hpBg) {
       sprite.hpBg = this.add.rectangle(0, yOff, w, h, 0x1f2937, 0.85);
       sprite.container.add(sprite.hpBg);
@@ -269,8 +269,12 @@ export class BoardScene extends Phaser.Scene {
     const decreasing = targetWidth < currentWidth;
     if (decreasing) {
       sprite.image.setTint(0xff4040);
-      this.time.delayedCall(100, () => sprite.image.clearTint());
+      this.time.delayedCall(100, () => {
+        if (sprite.image.active) sprite.image.clearTint();
+      });
     }
+
+    this.tweens.killTweensOf(sprite.hpFg);
 
     this.tweens.add({
       targets: sprite.hpFg,
