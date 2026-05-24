@@ -244,6 +244,51 @@ export class BoardScene extends Phaser.Scene {
     }
   }
 
+  private hpColor(pct: number): number {
+    return pct > 0.5 ? 0x22c55e : pct > 0.2 ? 0xeab308 : 0xef4444;
+  }
+
+  private tweenHpBar(sprite: PieceSprite, hp: number, maxHp: number, instant: boolean): void {
+    const w = TILE - 12;
+    const targetPct = Math.max(0, Math.min(1, maxHp > 0 ? hp / maxHp : 0));
+    const targetWidth = w * targetPct;
+    const targetColor = this.hpColor(targetPct);
+
+    if (!sprite.hpFg) {
+      this.attachHpBar(sprite, hp, maxHp);
+      return;
+    }
+
+    const currentWidth = sprite.hpFg.width;
+    if (instant || Math.abs(currentWidth - targetWidth) < 0.5) {
+      sprite.hpFg.width = targetWidth;
+      sprite.hpFg.fillColor = targetColor;
+      return;
+    }
+
+    const decreasing = targetWidth < currentWidth;
+    if (decreasing) {
+      sprite.image.setTint(0xff4040);
+      this.time.delayedCall(100, () => sprite.image.clearTint());
+    }
+
+    this.tweens.add({
+      targets: sprite.hpFg,
+      width: targetWidth,
+      duration: 200,
+      ease: 'Sine.easeInOut',
+      onUpdate: () => {
+        const w0 = TILE - 12;
+        const pct = w0 > 0 ? sprite.hpFg!.width / w0 : 0;
+        sprite.hpFg!.fillColor = this.hpColor(pct);
+      },
+      onComplete: () => {
+        sprite.hpFg!.width = targetWidth;
+        sprite.hpFg!.fillColor = targetColor;
+      },
+    });
+  }
+
   private destroyPieceSprite(square: string): void {
     const s = this.sprites.get(square);
     if (!s) return;
@@ -302,7 +347,7 @@ export class BoardScene extends Phaser.Scene {
 
       const hp = hpMap.get(square);
       if (hp) {
-        this.attachHpBar(existing, hp.hp, hp.maxHp);
+        this.tweenHpBar(existing, hp.hp, hp.maxHp, true);
       } else if (existing.hpBg || existing.hpFg) {
         existing.hpBg?.destroy();
         existing.hpFg?.destroy();
@@ -411,10 +456,10 @@ export class BoardScene extends Phaser.Scene {
       }
     }
 
-    // Step E. HP 즉시 갱신 (Task 4에서 width tween으로 교체)
+    // Step E. HP 변화 — 200ms width tween (감소 시 빨간 flash 포함)
     for (const [square, hpInfo] of hpMap) {
-      const sprite = this.sprites.get(square) ?? (lastMove.to === square ? moverSprite : undefined);
-      if (sprite) this.attachHpBar(sprite, hpInfo.hp, hpInfo.maxHp);
+      const sprite = this.sprites.get(square);
+      if (sprite) this.tweenHpBar(sprite, hpInfo.hp, hpInfo.maxHp, false);
     }
   }
 
