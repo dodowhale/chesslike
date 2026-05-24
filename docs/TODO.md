@@ -139,7 +139,7 @@
 - [ ] 정식 도트 에셋 — 기물 12종 × 캐릭터 스킨 × 보드 테마 (Default/Forest/Ocean)
 - [x] 막별 보드 테마(Forest/Ocean)에 맞춘 기물 색상 변형 — generator에 character 차원 + BoardScene THEME_COLORS map으로 적용 완료 (직교 시스템)
 - [x] 캐릭터별 기물 스킨(암살자단·신성단 등) — generator CHARACTER_PALETTES 3종 + BoardScene 텍스처 키 prefix로 적용 완료 (정규단 아이보리/암살자단 은회색/신성단 금색, 흑은 baseline 공통)
-- [ ] PromotionDialog 등 UI 아이콘 통일 — generator PNG 활용 검토. Cycle B에서 별도 처리 예정
+- [x] PromotionDialog 등 UI 아이콘 통일 — generator PNG 활용 완료 (PromotionDialog 4 선택지 + GameOverDialog 승자 K). HeaderBar/AdventureEntry/MainMenu 장식 아이콘은 후속
 - [ ] 노드 아이콘 6종 + 보스 스프라이트 3종 (1막/2막/3막)
 - [ ] 캐릭터 초상화 (정규단/암살자단/신성단 + 추가)
 - [ ] 아이템 아이콘 17종 (Common 10 + Uncommon 5 + Rare 5 + Legendary 2)
