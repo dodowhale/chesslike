@@ -10,12 +10,19 @@ const SIZE = 32;
 const PIECES = ['K', 'Q', 'R', 'B', 'N', 'P'] as const;
 const SIDES = ['w', 'b'] as const;
 
-const PIECE_COLORS = {
-  wFill: [0xf5, 0xe9, 0xd3, 0xff] as const,    // 옅은 아이보리 우드
-  wOutline: [0x2a, 0x20, 0x17, 0xff] as const, // 다크 브라운
-  bFill: [0x2f, 0x23, 0x1a, 0xff] as const,    // 짙은 우드
-  bOutline: [0x7a, 0x5a, 0x40, 0xff] as const, // mid 브라운
-} as const;
+const CHARACTER_IDS = ['standard', 'assassins', 'saints'] as const;
+type CharacterId = (typeof CHARACTER_IDS)[number];
+
+const CHARACTER_PALETTES: Record<CharacterId, { wFill: Pixel; wOutline: Pixel }> = {
+  standard:  { wFill: [0xf5, 0xe9, 0xd3, 0xff], wOutline: [0x2a, 0x20, 0x17, 0xff] },
+  assassins: { wFill: [0xa8, 0xa8, 0xb8, 0xff], wOutline: [0x1a, 0x1a, 0x22, 0xff] },
+  saints:    { wFill: [0xf5, 0xd9, 0x7c, 0xff], wOutline: [0x7a, 0x55, 0x11, 0xff] },
+};
+
+const BLACK_PALETTE = {
+  bFill:    [0x2f, 0x23, 0x1a, 0xff] as Pixel,
+  bOutline: [0x7a, 0x5a, 0x40, 0xff] as Pixel,
+};
 
 // NOTE: 각 행 끝의 trailing space는 의미 있는 픽셀(투명)이다. 에디터의 trim-trailing-whitespace 옵션이 켜져 있으면 글리프가 손상될 수 있으므로, 본 블록을 편집할 때는 해당 옵션을 끄거나 .editorconfig로 보호할 것. 위 GLYPH_ROW 어설션이 잘못된 길이/문자를 빌드 시점에 차단한다.
 const PIECE_GLYPH: Record<(typeof PIECES)[number], readonly string[]> = {
@@ -225,13 +232,19 @@ const PIECE_GLYPH: Record<(typeof PIECES)[number], readonly string[]> = {
   ],
 };
 
-function makePixels(side: (typeof SIDES)[number], type: (typeof PIECES)[number]): Pixel[][] {
-  const fill: Pixel = side === 'w'
-    ? ([...PIECE_COLORS.wFill] as unknown as Pixel)
-    : ([...PIECE_COLORS.bFill] as unknown as Pixel);
-  const outline: Pixel = side === 'w'
-    ? ([...PIECE_COLORS.wOutline] as unknown as Pixel)
-    : ([...PIECE_COLORS.bOutline] as unknown as Pixel);
+function makePixels(
+  side: (typeof SIDES)[number],
+  type: (typeof PIECES)[number],
+  characterId: CharacterId,
+): Pixel[][] {
+  const fill: Pixel =
+    side === 'w'
+      ? ([...CHARACTER_PALETTES[characterId].wFill] as unknown as Pixel)
+      : ([...BLACK_PALETTE.bFill] as unknown as Pixel);
+  const outline: Pixel =
+    side === 'w'
+      ? ([...CHARACTER_PALETTES[characterId].wOutline] as unknown as Pixel)
+      : ([...BLACK_PALETTE.bOutline] as unknown as Pixel);
   const transparent: Pixel = [0, 0, 0, 0];
 
   const grid: Pixel[][] = Array.from({ length: SIZE }, () =>
@@ -343,13 +356,16 @@ const outDir = resolve(here, '..', 'client', 'public', 'assets', 'pieces');
 mkdirSync(outDir, { recursive: true });
 
 let written = 0;
-for (const side of SIDES) {
-  for (const type of PIECES) {
-    const pixels = makePixels(side, type);
-    const png = encodePng(pixels);
-    const file = resolve(outDir, `${side}${type}.png`);
-    writeFileSync(file, png);
-    written++;
+for (const characterId of CHARACTER_IDS) {
+  for (const side of SIDES) {
+    for (const type of PIECES) {
+      const pixels = makePixels(side, type, characterId);
+      const png = encodePng(pixels);
+      const file = resolve(outDir, characterId, `${side}${type}.png`);
+      mkdirSync(dirname(file), { recursive: true });
+      writeFileSync(file, png);
+      written++;
+    }
   }
 }
 console.log(`✓ Wrote ${written} placeholder PNGs to ${outDir}`);

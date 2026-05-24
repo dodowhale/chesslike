@@ -13,7 +13,7 @@ import {
   type Color,
   type PieceSymbol,
 } from '@/lib/chess/ChessManager';
-import { eventBus, type BoardRenderState, type LastMove, type BoardTheme } from '@/lib/phaser/bridge/eventBus';
+import { eventBus, type BoardRenderState, type LastMove, type BoardTheme, type CharacterId } from '@/lib/phaser/bridge/eventBus';
 import { settings } from '@/store/settingsStore';
 
 export type LocalRequestKind = 'undo' | 'draw' | 'resign';
@@ -76,6 +76,14 @@ function selectTheme(): BoardTheme {
   return 'default';
 }
 
+function selectCharacter(): CharacterId {
+  if (state.mode === 'adventure' && state.adventure) {
+    const id = state.adventure.characterId;
+    if (id === 'assassins' || id === 'saints') return id;
+  }
+  return 'standard';
+}
+
 function emitBoard(opts: { lastMove?: LastMove; instant?: boolean } = {}): void {
   const last = opts.lastMove ?? (chess.lastMove() ? toRichLastMove(chess.lastMove()!) : undefined);
   const reducedMotion = settings.accessibility.reducedMotion;
@@ -93,6 +101,7 @@ function emitBoard(opts: { lastMove?: LastMove; instant?: boolean } = {}): void 
     pieceHps: state.ui.adventurePieceHps,
     noPieceAnim: reducedMotion,
     theme: selectTheme(),
+    characterId: selectCharacter(),
   };
   nextEmitInstant = false;
   eventBus.emit('state:board', payload);

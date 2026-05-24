@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 
+const CHARACTER_IDS = ['standard', 'assassins', 'saints'] as const;
 const PIECE_KEYS = [
   'wK', 'wQ', 'wR', 'wB', 'wN', 'wP',
   'bK', 'bQ', 'bR', 'bB', 'bN', 'bP',
@@ -11,8 +12,10 @@ export class BootScene extends Phaser.Scene {
   }
 
   preload(): void {
-    for (const key of PIECE_KEYS) {
-      this.load.image(key, `/assets/pieces/${key}.png`);
+    for (const charId of CHARACTER_IDS) {
+      for (const pieceKey of PIECE_KEYS) {
+        this.load.image(`${charId}-${pieceKey}`, `/assets/pieces/${charId}/${pieceKey}.png`);
+      }
     }
   }
 

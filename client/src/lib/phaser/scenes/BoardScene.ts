@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { eventBus, type BoardRenderState, type LastMove, type BoardTheme } from '../bridge/eventBus';
+import { eventBus, type BoardRenderState, type LastMove, type BoardTheme, type CharacterId } from '../bridge/eventBus';
 
 const TILE = 56;
 const BOARD_SIZE = TILE * 8;
@@ -52,6 +52,7 @@ export class BoardScene extends Phaser.Scene {
   private coordLayer!: Phaser.GameObjects.Container;
   private orientation: 'w' | 'b' = 'w';
   private theme: BoardTheme = 'default';
+  private characterId: CharacterId = 'standard';
   private currentState: BoardRenderState | null = null;
   private offReady: (() => void) | null = null;
   private offState: (() => void) | null = null;
@@ -74,11 +75,20 @@ export class BoardScene extends Phaser.Scene {
 
     this.offState = eventBus.on('state:board', (payload) => {
       const themeChanged = this.theme !== (payload.theme ?? 'default');
+      const characterChanged = this.characterId !== (payload.characterId ?? 'standard');
       this.theme = payload.theme ?? 'default';
+      this.characterId = payload.characterId ?? 'standard';
       this.currentState = payload;
       if (themeChanged) this.drawTilesAndCoords();
       if (payload.orientation !== this.orientation) {
         this.applyOrientation(payload.orientation, payload.instant === true);
+      } else if (characterChanged) {
+        // 캐릭터 변경 시 모든 sprite를 새 텍스처로 다시 그림 — instant 분기.
+        // 진행 중 Tween은 즉시 종료해 race를 피한다.
+        this.activeTween?.complete();
+        this.activeTween = null;
+        this.sprites.forEach((_, sq) => this.destroyPieceSprite(sq));
+        this.render();
       } else {
         this.render();
       }
@@ -220,7 +230,7 @@ export class BoardScene extends Phaser.Scene {
     const x = px?.x ?? 0;
     const y = px?.y ?? 0;
     const container = this.add.container(x, y);
-    const textureKey = PIECE_KEY[pieceChar] ?? '';
+    const textureKey = `${this.characterId}-${PIECE_KEY[pieceChar] ?? ''}`;
     const image = this.add.image(0, 0, textureKey);
     image.setDisplaySize(TILE - 4, TILE - 4);
     container.add(image);
@@ -434,7 +444,7 @@ export class BoardScene extends Phaser.Scene {
             const newChar = isWhite ? lastMove.promotedTo!.toUpperCase() : lastMove.promotedTo!;
             moverSprite.pieceChar = newChar;
             const tex = PIECE_KEY[newChar];
-            if (tex) moverSprite.image.setTexture(tex);
+            if (tex) moverSprite.image.setTexture(`${this.characterId}-${tex}`);
           });
         }
         tweens.push(tween);

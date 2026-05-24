@@ -25,6 +25,8 @@ export interface LastMove {
 
 export type BoardTheme = 'default' | 'forest' | 'ocean';
 
+export type CharacterId = 'standard' | 'assassins' | 'saints';
+
 export interface BoardRenderState {
   fen: string;
   selected?: string;
@@ -42,6 +44,7 @@ export interface BoardRenderState {
   /** 기물 이동 애니메이션 비활성 플래그 (예: 모션 감소 옵션 시). */
   noPieceAnim?: boolean;
   theme?: BoardTheme;
+  characterId?: CharacterId;
 }
 
 export interface GameEvents {
