@@ -17,6 +17,7 @@ const PIECE_COLORS = {
   bOutline: [0x7a, 0x5a, 0x40, 0xff] as const, // mid 브라운
 } as const;
 
+// NOTE: 각 행 끝의 trailing space는 의미 있는 픽셀(투명)이다. 에디터의 trim-trailing-whitespace 옵션이 켜져 있으면 글리프가 손상될 수 있으므로, 본 블록을 편집할 때는 해당 옵션을 끄거나 .editorconfig로 보호할 것. 위 GLYPH_ROW 어설션이 잘못된 길이/문자를 빌드 시점에 차단한다.
 const PIECE_GLYPH: Record<(typeof PIECES)[number], readonly string[]> = {
   K: [
     '                                ',
@@ -321,6 +322,7 @@ function encodePng(pixels: Pixel[][]): Buffer {
 }
 
 // Glyph integrity assertion — 32 rows × 32 chars per piece
+const GLYPH_ROW = /^[ .X]{32}$/;
 for (const type of PIECES) {
   const glyph = PIECE_GLYPH[type];
   if (glyph.length !== SIZE) {
@@ -329,6 +331,9 @@ for (const type of PIECES) {
   glyph.forEach((row, i) => {
     if (row.length !== SIZE) {
       throw new Error(`PIECE_GLYPH[${type}][${i}]: expected ${SIZE} chars, got ${row.length}`);
+    }
+    if (!GLYPH_ROW.test(row)) {
+      throw new Error(`PIECE_GLYPH[${type}][${i}]: non-canonical character (only ' ', '.', 'X' allowed)`);
     }
   });
 }
