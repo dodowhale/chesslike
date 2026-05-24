@@ -1,7 +1,7 @@
 import { Show } from 'solid-js';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
-import { gameStore } from '@/store/gameStore';
+import { gameStore, getActiveCharacterId } from '@/store/gameStore';
 import type { GameStatus } from '@/lib/chess/ChessManager';
 
 interface GameOverDialogProps {
@@ -33,12 +33,32 @@ function statusTitle(s: GameStatus): string {
   }
 }
 
-function statusEmoji(s: GameStatus): string {
-  if (s.kind === 'ongoing') return '';
-  if (s.kind === 'checkmate' || s.kind === 'resignation' || s.kind === 'timeout') {
-    return s.winner === 'w' ? '♔' : '♚';
-  }
-  return '🤝';
+function isWinnerStatus(s: GameStatus): s is Extract<GameStatus, { winner: 'w' | 'b' }> {
+  return s.kind === 'checkmate' || s.kind === 'resignation' || s.kind === 'timeout';
+}
+
+function StatusGlyph(props: { status: GameStatus }) {
+  return (
+    <Show
+      when={isWinnerStatus(props.status) ? props.status : null}
+      fallback={
+        <Show when={props.status.kind !== 'ongoing'}>
+          <span class="text-6xl">🤝</span>
+        </Show>
+      }
+    >
+      {(winnerStatus) => (
+        <img
+          src={`/assets/pieces/${getActiveCharacterId()}/${winnerStatus().winner}K.png`}
+          alt={winnerStatus().winner === 'w' ? '백 킹' : '흑 킹'}
+          width={96}
+          height={96}
+          class="w-24 h-24"
+          style={{ 'image-rendering': 'pixelated' }}
+        />
+      )}
+    </Show>
+  );
 }
 
 export function GameOverDialog(props: GameOverDialogProps) {
@@ -50,7 +70,7 @@ export function GameOverDialog(props: GameOverDialogProps) {
     <Show when={open()}>
       <Modal open={true} onClose={() => props.onClose?.()} title={statusTitle(status())}>
         <div class="flex flex-col items-center gap-4 py-2">
-          <span class="text-6xl">{statusEmoji(status())}</span>
+          <StatusGlyph status={status()} />
           <Show when={lastMove()}>
             {(m) => (
               <p class="text-sm text-slate-400">
