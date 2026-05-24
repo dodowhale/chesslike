@@ -60,6 +60,8 @@ export interface AdventureChessManagerOptions {
   pieces: PieceState[];
   globalModifiers?: Modifier[];
   initialFen?: string;
+  /** 매 턴 시작 시 적용되는 캐릭터 패시브 (turn-start healPerTurn 등). */
+  turnStartHeal?: number;
 }
 
 function effectiveAttack(piece: AdventurePiece, globalMods: Modifier[]): number {
@@ -97,10 +99,28 @@ export function createAdventureChessManager(opts: AdventureChessManagerOptions) 
   const piecesBySquare = new Map<Square, PieceState>();
   const piecesById = new Map<string, PieceState>();
   let globalMods: Modifier[] = opts.globalModifiers ?? [];
+  const turnStartHeal = opts.turnStartHeal ?? 0;
 
   for (const piece of opts.pieces) {
     piecesBySquare.set(piece.square, piece);
     piecesById.set(piece.id, piece);
+  }
+
+  // 멱등성 보장: 같은 차례에 두 번 호출되어도 한 번만 힐.
+  let lastHealedKey = '';
+
+  /** SPEC §5.6 트리거 발화 — 매 턴 시작 시 healPerTurn. */
+  function applyTurnStartHeal(side: 'w' | 'b'): void {
+    if (turnStartHeal <= 0) return;
+    // 차례 진영 + chess.js 무브 수 조합으로 멱등 키.
+    const key = `${side}:${chess.moves().length}`;
+    if (lastHealedKey === key) return;
+    lastHealedKey = key;
+    for (const piece of piecesById.values()) {
+      if (piece.side !== side) continue;
+      const newHp = Math.min(piece.maxHp, piece.hp + turnStartHeal);
+      piece.hp = newHp;
+    }
   }
 
   function getPieces(): PieceState[] {
@@ -132,6 +152,8 @@ export function createAdventureChessManager(opts: AdventureChessManagerOptions) 
     if (!attacker) {
       return { ok: false, reason: 'no-piece', outcome: { kind: 'noop' }, fen: chess.getFen() };
     }
+    // 턴 시작 시점 패시브 발화 (현재 차례 진영에 적용 — 무브 직전에 한 번).
+    applyTurnStartHeal(chess.turn());
 
     // 1. chess.js로 합법성 검증 + 메타데이터 수집 (preview)
     const preview = chess.previewMove(uci);

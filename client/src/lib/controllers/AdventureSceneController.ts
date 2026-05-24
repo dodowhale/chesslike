@@ -12,9 +12,24 @@ import type {
 import { snapshotAdventureRun, setMode } from '@/store/gameStore';
 import { INITIAL_FEN } from '@shared/game';
 import { generateAct } from '@/lib/adventure/MapGenerator';
-import { basePieceStats } from '@/lib/chess/AdventureChessManager';
+import {
+  basePieceStats,
+  createAdventureChessManager,
+  type AdventureChessManager,
+  type AdventureMoveResult,
+  type PieceState,
+} from '@/lib/chess/AdventureChessManager';
 import { persistRun } from '@/lib/adventure/runPersist';
+import {
+  resetStatusOngoing,
+  setAdventureBoardSnapshot,
+  setAdventurePieceHps,
+  setInteractive,
+  setStatus,
+} from '@/store/gameStore';
+import { INITIAL_FEN as STARTING_FEN } from '@shared/game';
 import type { SceneController } from './types';
+import { getCharacterById } from '@/lib/adventure/data/characters';
 
 /**
  * ADVENTURE.md §8.1 별의 조각 보상.
@@ -48,6 +63,8 @@ export class AdventureRunController implements SceneController {
   unlockedItemPools: string[] = [];
   /** firstNodeRewardGuaranteed 영구 장식품 적용을 위한 1회용 플래그. */
   firstNodeBonusPending = false;
+  /** 노드 진입 시점에 활성화되는 보드 매니저 (Battle/Elite/Boss). */
+  private boardChess: AdventureChessManager | null = null;
   private initErrorSignal = createSignal<string | null>(null);
 
   constructor(opts: {
@@ -280,6 +297,173 @@ export class AdventureRunController implements SceneController {
 
   initialFen(): string {
     return INITIAL_FEN;
+  }
+
+  // ---------- 보드 인터랙션 (M5 모험 정식 보드) ----------
+
+  /**
+   * 현재 노드(Battle/Elite/Boss) 진입 시 호출. 캐릭터 시작 진형 + 메타 보너스를
+   * 반영한 새 AdventureChessManager 인스턴스를 만들어 보드를 활성화한다.
+   *
+   * @param preservePlayerPieces — 보스 페이즈 전환 시 SPEC §5.4에 따라 플레이어
+   *   기물 HP/아이템을 보존하려면 이전 boardChess의 백 진영 pieces 스냅샷을 넘긴다.
+   */
+  enterBoardNode(preservePlayerPieces?: PieceState[]): void {
+    const character = getCharacterById(this.run.characterId);
+    if (!character) return;
+    const preservedById = new Map<string, PieceState>();
+    if (preservePlayerPieces) {
+      for (const p of preservePlayerPieces) {
+        if (p.side === 'w') preservedById.set(p.id, p);
+      }
+    }
+    const pieces: PieceState[] = character.startingPieces.map((loadout, idx) => {
+      const base = basePieceStats(loadout.type);
+      const baseHp = loadout.baseStatsOverride?.hp ?? base.hp;
+      const baseAttack = loadout.baseStatsOverride?.attack ?? base.attack;
+      const id = `b-${idx}-${loadout.side}-${loadout.type}`;
+      const preserved = preservedById.get(id);
+      if (preserved) {
+        return { ...preserved, square: loadout.startingSquare as PieceState['square'] };
+      }
+      const hpBonus = loadout.side === 'w' && loadout.type === 'k' ? this.startHpBonus : 0;
+      return {
+        id,
+        type: loadout.type,
+        side: loadout.side,
+        hp: baseHp + hpBonus,
+        maxHp: baseHp + hpBonus,
+        attack: baseAttack,
+        items: loadout.startingItems?.slice() ?? [],
+        square: loadout.startingSquare as PieceState['square'],
+      };
+    });
+    // 캐릭터 패시브 중 turn-start healPerTurn 합산 (SPEC §5.6 트리거 분류).
+    const turnStartHeal = character.passives
+      .filter((p) => p.trigger === 'turn-start')
+      .reduce((acc, p) => acc + (p.effect.healPerTurn ?? 0), 0);
+    this.boardChess = createAdventureChessManager({
+      pieces,
+      globalModifiers: [...this.run.globalModifiers],
+      initialFen: STARTING_FEN,
+      turnStartHeal,
+    });
+    resetStatusOngoing();
+    setInteractive(true);
+    this.syncBoard();
+  }
+
+  /**
+   * 보스 페이즈 전환 — SPEC §5.4 "플레이어 기물 HP/아이템 보존". 현재 boardChess의
+   * 백 진영 스냅샷을 enterBoardNode로 넘겨 보드 위치만 새로 시작.
+   */
+  startNextBossPhase(): void {
+    if (!this.boardChess) return;
+    const playerPieces = this.boardChess.getPieces().filter((p) => p.side === 'w');
+    this.enterBoardNode(playerPieces);
+  }
+
+  leaveBoardNode(): void {
+    this.boardChess = null;
+    setAdventurePieceHps(undefined);
+  }
+
+  /**
+   * 사용자가 보드 위 무브를 시도. 결과를 store에 반영하고 종료 조건을 검사.
+   */
+  attemptBoardMove(uci: string): AdventureMoveResult | undefined {
+    if (!this.boardChess) return undefined;
+    const result = this.boardChess.tryMove(uci);
+    if (!result.ok) return result;
+    this.syncBoard();
+    if (this.checkBoardEndCondition('w')) return result;
+    // 사용자 차례 끝 — 다음 프레임에 AI 응답
+    queueMicrotask(() => this.scheduleAiReply());
+    return result;
+  }
+
+  scheduleAiReply(): void {
+    if (!this.boardChess) return;
+    if (this.boardChess.turn() !== 'b') return;
+    // 약한 random AI (M5 MVP). 후속에서 Stockfish 또는 보스 전용 AI로 교체.
+    const moves = this.boardChess.moves();
+    void moves; // moves()는 적용된 무브 로그. legal moves는 아래.
+    const legalUcis = this.collectLegalUcis('b');
+    if (legalUcis.length === 0) {
+      this.checkBoardEndCondition('b');
+      return;
+    }
+    const pick = legalUcis[Math.floor(Math.random() * legalUcis.length)]!;
+    const result = this.boardChess.tryMove(pick);
+    if (!result.ok) return;
+    this.syncBoard();
+    this.checkBoardEndCondition('b');
+  }
+
+  private collectLegalUcis(_color: 'w' | 'b'): string[] {
+    if (!this.boardChess) return [];
+    const pieces = this.boardChess.getPieces();
+    const ucis: string[] = [];
+    for (const piece of pieces) {
+      if (piece.side !== _color) continue;
+      const dests = this.boardChess.legalDestinations(piece.square);
+      for (const d of dests) {
+        ucis.push(`${piece.square}${d}`);
+      }
+    }
+    return ucis;
+  }
+
+  private syncBoard(): void {
+    if (!this.boardChess) return;
+    const hps = this.boardChess.getPieces().map((p) => ({
+      square: p.square,
+      hp: p.hp,
+      maxHp: p.maxHp,
+    }));
+    setAdventureBoardSnapshot(this.boardChess.getFen(), hps);
+  }
+
+  /** 보드 종료 조건 검사. 처리되었다면 true. */
+  private checkBoardEndCondition(turnAfterMove: 'w' | 'b'): boolean {
+    if (!this.boardChess) return false;
+    const node = this.currentNode();
+    const isBoss = node?.type === 'boss';
+    const whiteKingHp = this.boardChess.getKingHp('w');
+    const blackKingHp = this.boardChess.getKingHp('b');
+
+    // SPEC §4.2: 보스에서는 KingHp=0이 종료가 아닌 약화의 자리표. 일반 노드만 즉시 종료.
+    if (!isBoss) {
+      if (whiteKingHp <= 0) {
+        setStatus({ kind: 'resignation', winner: 'b' });
+        return true;
+      }
+      if (blackKingHp <= 0) {
+        setStatus({ kind: 'checkmate', winner: 'w' });
+        return true;
+      }
+    }
+
+    if (this.boardChess.isCheckmate()) {
+      // 체스 체크메이트는 현재 차례 진영 패배. SPEC §4.2 보스는 체크메이트만 페이즈 종료.
+      setStatus({ kind: 'checkmate', winner: turnAfterMove === 'w' ? 'b' : 'w' });
+      return true;
+    }
+    if (this.boardChess.isStalemate()) {
+      // SPEC §5.5: 일반 노드는 패배. 보스는 양측 진행 불가 시 따로 처리.
+      if (isBoss) {
+        setStatus({ kind: 'draw-agreement' });
+      } else {
+        setStatus({ kind: 'resignation', winner: 'b' });
+      }
+      return true;
+    }
+    return false;
+  }
+
+  /** 보드 매니저 외부 접근(애니메이션 컴포넌트 등에서 읽기 전용). */
+  getBoardChess(): AdventureChessManager | null {
+    return this.boardChess;
   }
 
   private materializePieces(character: Character): AdventurePiece[] {

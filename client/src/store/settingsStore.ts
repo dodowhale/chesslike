@@ -2,6 +2,7 @@ import { createStore, reconcile, unwrap } from 'solid-js/store';
 import { createEffect, createRoot, on } from 'solid-js';
 import { DEFAULT_SETTINGS, type GlobalSettings } from '@shared/settings';
 import { loadSettings, saveSettings } from '@/lib/storage/settingsRepo';
+import { audioManager } from '@/lib/audio/AudioManager';
 
 const [state, setState] = createStore<GlobalSettings>(DEFAULT_SETTINGS);
 
@@ -48,6 +49,13 @@ export function startSettingsPersistence(): void {
             void saveSettings(structuredClone(unwrap(state)));
           }, 300);
         },
+      ),
+    );
+    // audio 설정 변경 시 즉시 AudioManager 음량 반영.
+    createEffect(
+      on(
+        () => [state.audio.bgmVolume, state.audio.sfxVolume, state.audio.muted] as const,
+        () => audioManager.applyVolumes(),
       ),
     );
   });

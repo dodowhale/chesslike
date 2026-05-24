@@ -17,6 +17,7 @@ const AdventureBoss = lazy(() => import('@/routes/AdventureBoss'));
 const AdventureInventory = lazy(() => import('@/routes/AdventureInventory'));
 const AdventureResult = lazy(() => import('@/routes/AdventureResult'));
 const MetaProgress = lazy(() => import('@/routes/MetaProgress'));
+const Achievements = lazy(() => import('@/routes/Achievements'));
 
 export default function App() {
   return (
@@ -37,6 +38,7 @@ export default function App() {
       <Route path="/adventure/run/inventory" component={AdventureInventory} />
       <Route path="/adventure/run/result" component={AdventureResult} />
       <Route path="/meta" component={MetaProgress} />
+      <Route path="/achievements" component={Achievements} />
       <Route path="*" component={() => <Navigate href="/" />} />
     </Router>
   );

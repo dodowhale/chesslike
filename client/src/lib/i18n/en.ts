@@ -15,6 +15,7 @@ export const en: I18nDict = {
     stats: 'Stats',
     starShards: 'Star Shards',
     build: 'Build',
+    meta: 'Meta Progress',
   },
   classic: {
     title: 'Classic',
@@ -29,6 +30,17 @@ export const en: I18nDict = {
     title: 'Adventure',
     inProgress: 'Coming soon — to be built in milestone M3.',
     back: 'Back',
+    characterSelect: 'Character Select',
+    characterSelectDesc:
+      'Clear Act 1 boss in one run. Star Shards permanently upgrade future runs.',
+    resumeRun: 'Run in progress',
+    resume: 'Resume',
+    discard: 'Discard',
+    locked: 'Locked (unlock in Meta Progress)',
+    map: 'Map',
+    inventory: 'Inventory',
+    gold: 'Gold',
+    abandon: 'Abandon Run',
   },
   settings: {
     title: 'Settings',

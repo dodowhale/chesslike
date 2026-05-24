@@ -160,6 +160,7 @@ export class BoardScene extends Phaser.Scene {
       checkSquare,
       hintFrom,
       hintTo,
+      pieceHps,
     } = this.currentState;
 
     if (lastMoveFrom) this.drawTile(lastMoveFrom, LAST_MOVE, 0.35);
@@ -171,6 +172,10 @@ export class BoardScene extends Phaser.Scene {
 
     const [position] = fen.split(' ');
     if (!position) return;
+    const hpMap = new Map<string, { hp: number; maxHp: number }>();
+    if (pieceHps) {
+      for (const p of pieceHps) hpMap.set(p.square, { hp: p.hp, maxHp: p.maxHp });
+    }
     const ranks = position.split('/');
     for (let r = 0; r < 8; r++) {
       const rankStr = ranks[r];
@@ -189,11 +194,26 @@ export class BoardScene extends Phaser.Scene {
             const sprite = this.add.image(px.x, px.y, key);
             sprite.setDisplaySize(TILE - 4, TILE - 4);
             this.pieceLayer.add(sprite);
+            const hp = hpMap.get(square);
+            if (hp) this.drawHpBar(px.x, px.y, hp.hp, hp.maxHp);
           }
         }
         file += 1;
       }
     }
+  }
+
+  private drawHpBar(cx: number, cy: number, hp: number, maxHp: number): void {
+    const w = TILE - 12;
+    const h = 4;
+    const y = cy + TILE / 2 - 6;
+    const pct = Math.max(0, Math.min(1, maxHp > 0 ? hp / maxHp : 0));
+    const bg = this.add.rectangle(cx, y, w, h, 0x1f2937, 0.85);
+    this.pieceLayer.add(bg);
+    const color = pct > 0.5 ? 0x22c55e : pct > 0.2 ? 0xeab308 : 0xef4444;
+    const fg = this.add.rectangle(cx - w / 2, y, w * pct, h, color, 0.95);
+    fg.setOrigin(0, 0.5);
+    this.pieceLayer.add(fg);
   }
 
   private applyOrientation(orientation: 'w' | 'b', instant: boolean): void {

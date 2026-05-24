@@ -1,3 +1,4 @@
+import { useNavigate } from '@solidjs/router';
 import { t } from '@/lib/i18n';
 
 interface HeaderBarProps {
@@ -6,6 +7,7 @@ interface HeaderBarProps {
 
 export function HeaderBar(props: HeaderBarProps) {
   const dict = () => t();
+  const navigate = useNavigate();
   return (
     <header class="flex items-center justify-between px-4 py-3 border-b border-slate-800 bg-slate-950/80 backdrop-blur">
       <div class="flex items-center gap-2">
@@ -16,10 +18,8 @@ export function HeaderBar(props: HeaderBarProps) {
         <button
           type="button"
           aria-label={dict().menu.achievements}
-          aria-disabled="true"
-          tabindex={-1}
-          class="w-9 h-9 rounded-md hover:bg-slate-800 transition-colors opacity-50 cursor-not-allowed"
-          disabled
+          onClick={() => navigate('/achievements')}
+          class="w-9 h-9 rounded-md hover:bg-slate-800 transition-colors"
         >
           🏆
         </button>

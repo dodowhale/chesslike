@@ -1,5 +1,11 @@
 type Handler<T = unknown> = (payload: T) => void;
 
+export interface BoardPieceHp {
+  square: string;
+  hp: number;
+  maxHp: number;
+}
+
 export interface BoardRenderState {
   fen: string;
   selected?: string;
@@ -13,6 +19,10 @@ export interface BoardRenderState {
   interactive: boolean;
   /** orientation 변경 시 트랜지션 효과를 건너뛸지 여부 (모션 감소 옵션 등). */
   instant?: boolean;
+  /** 모험 모드일 때만 채워지는 piece HP 정보. BoardScene이 HP 바를 그린다. */
+  pieceHps?: readonly BoardPieceHp[];
+  /** 기물 이동 애니메이션 비활성 플래그 (예: 모션 감소 옵션 시). */
+  noPieceAnim?: boolean;
 }
 
 export interface GameEvents {

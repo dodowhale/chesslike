@@ -10,6 +10,7 @@ export interface I18nDict {
     stats: string;
     starShards: string;
     build: string;
+    meta: string;
   };
   classic: {
     title: string;
@@ -24,6 +25,16 @@ export interface I18nDict {
     title: string;
     inProgress: string;
     back: string;
+    characterSelect: string;
+    characterSelectDesc: string;
+    resumeRun: string;
+    resume: string;
+    discard: string;
+    locked: string;
+    map: string;
+    inventory: string;
+    gold: string;
+    abandon: string;
   };
   settings: {
     title: string;
@@ -59,6 +70,7 @@ export const ko: I18nDict = {
     stats: '통계',
     starShards: '별의 조각',
     build: '빌드',
+    meta: '메타 진행',
   },
   classic: {
     title: '클래식',
@@ -73,6 +85,17 @@ export const ko: I18nDict = {
     title: '모험',
     inProgress: '준비 중 — M3 마일스톤에서 작업합니다.',
     back: '뒤로',
+    characterSelect: '캐릭터 선택',
+    characterSelectDesc:
+      '한 번의 런으로 1막 보스 클리어를 목표로 합니다. 별의 조각으로 다음 런이 점점 강화됩니다.',
+    resumeRun: '진행 중인 런',
+    resume: '이어하기',
+    discard: '폐기',
+    locked: '잠김 (메타 진행에서 해금)',
+    map: '맵',
+    inventory: '인벤토리',
+    gold: '골드',
+    abandon: '런 포기',
   },
   settings: {
     title: '설정',

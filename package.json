@@ -5,6 +5,7 @@
   "description": "Pixel Chess Roguelike — 정통 체스와 로그라이크 모험이 결합된 픽셀 아트 게임",
   "workspaces": [
     "client",
+    "server",
     "shared"
   ],
   "scripts": {

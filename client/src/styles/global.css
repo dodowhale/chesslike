@@ -34,3 +34,34 @@ canvas {
     transition-duration: 0.01ms !important;
   }
 }
+
+/** 모험 모드 아이템 등급별 프레임 (D2). */
+.rarity-common {
+  border-color: #94a3b8;
+  box-shadow: 0 0 0 1px rgba(148, 163, 184, 0.3);
+}
+.rarity-uncommon {
+  border-color: #10b981;
+  box-shadow: 0 0 12px rgba(16, 185, 129, 0.4);
+}
+.rarity-rare {
+  border-color: #3b82f6;
+  box-shadow: 0 0 16px rgba(59, 130, 246, 0.5);
+}
+.rarity-legendary {
+  border-color: #a855f7;
+  box-shadow: 0 0 22px rgba(168, 85, 247, 0.65);
+  animation: rarity-pulse 2.4s ease-in-out infinite;
+}
+@keyframes rarity-pulse {
+  0%, 100% { box-shadow: 0 0 16px rgba(168, 85, 247, 0.55); }
+  50% { box-shadow: 0 0 28px rgba(168, 85, 247, 0.85); }
+}
+
+/** 노치 / safe-area 지원 (C3 모바일 최적화). */
+@supports (padding: env(safe-area-inset-top)) {
+  body {
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}

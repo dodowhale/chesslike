@@ -36,6 +36,8 @@ interface UiState {
   aiThinking: boolean;
   /** 로컬멀티에서 한쪽이 요청한 합의 상태. 다른 쪽 응답을 기다린다. */
   localRequest?: LocalRequest;
+  /** 모험 모드 보드 렌더링에 쓰는 piece HP 정보 (없으면 일반 보드). */
+  adventurePieceHps?: { square: string; hp: number; maxHp: number }[];
 }
 
 interface RootState extends GameState {
@@ -80,6 +82,8 @@ function emitBoard(): void {
     orientation: state.ui.orientation,
     interactive: state.ui.interactive,
     instant: nextEmitInstant || settings.accessibility.reducedMotion,
+    pieceHps: state.ui.adventurePieceHps,
+    noPieceAnim: settings.accessibility.reducedMotion,
   };
   nextEmitInstant = false;
   eventBus.emit('state:board', payload);
@@ -91,6 +95,14 @@ function refreshStatus(): void {
 
 export function setMode(mode: Mode | undefined): void {
   setState('mode', mode);
+  // 모드 전환 시 incompatible state 정리.
+  setState('ui', {
+    localRequest: undefined,
+    clock: undefined,
+    selected: undefined,
+    highlights: [],
+    adventurePieceHps: undefined,
+  });
 }
 
 export function setClassicConfig(config: ClassicConfig | undefined): void {
@@ -189,6 +201,12 @@ export function setStatus(status: GameStatus): void {
   emitBoard();
 }
 
+/** 보스 페이즈 전환 등 status를 ongoing으로 되돌려야 하는 흐름. */
+export function resetStatusOngoing(): void {
+  setState('ui', { status: { kind: 'ongoing' }, interactive: true });
+  emitBoard();
+}
+
 function setSelection(selected: Square | undefined, highlights: Square[]): void {
   setState('ui', {
     selected,
@@ -206,6 +224,8 @@ export function selectSquare(square: Square): void {
   if (!state.ui.interactive) return;
   if (state.ui.pendingPromotion) return;
   if (state.ui.localRequest) return;
+  // 모험 모드는 별도 보드 매니저를 가지므로 클래식 chess.js 핸들러를 비활성화한다.
+  if (state.mode === 'adventure') return;
   const dests = chess.legalDestinations(square);
   if (dests.length === 0) {
     clearSelection();
@@ -248,6 +268,9 @@ export function handleSquareClick(square: Square): 'moved' | 'selected' | 'clear
   if (!state.ui.interactive) return 'noop';
   if (state.ui.pendingPromotion) return 'noop';
   if (state.ui.localRequest) return 'noop';
+  // 모험 모드는 별도 보드 매니저를 가지므로 클래식 chess.js 핸들러를 비활성화한다.
+  // AdventureBattle/Boss 라우트가 자체 핸들러를 eventBus.on('board:squareClicked')로 등록.
+  if (state.mode === 'adventure') return 'noop';
   const selected = state.ui.selected;
   if (selected && square === selected) {
     clearSelection();
@@ -353,6 +376,38 @@ export function setLocalRequest(req: LocalRequest | undefined): void {
   setState('ui', 'localRequest', req);
 }
 
+export function setAdventurePieceHps(
+  hps: { square: string; hp: number; maxHp: number }[] | undefined,
+): void {
+  setState('ui', 'adventurePieceHps', hps);
+  emitBoard();
+}
+
+export function setAdventureBoardFen(fen: string): void {
+  setState({ board: fen });
+  // emitBoard는 setAdventureBoardSnapshot에서 합쳐 발화. 단독 호출은 stale HP를 그릴 수
+  // 있으므로 호출처는 setAdventureBoardSnapshot 사용 권장.
+  emitBoard();
+}
+
+/** FEN + pieceHps를 단일 batch로 갱신해 중간 stale render를 방지. */
+export function setAdventureBoardSnapshot(
+  fen: string,
+  hps: { square: string; hp: number; maxHp: number }[],
+): void {
+  setState('board', fen);
+  setState('ui', 'adventurePieceHps', hps);
+  emitBoard();
+}
+
+export function setAdventureSelection(
+  selected: Square | undefined,
+  highlights: Square[],
+): void {
+  setState('ui', { selected, highlights });
+  emitBoard();
+}
+
 export function getChessManager() {
   return chess;
 }
@@ -377,6 +432,18 @@ eventBus.on('cmd:clearSelection', () => {
   clearSelection();
 });
 
+/** 모험 보드 클릭 콜백을 컨트롤러가 위임받기 위한 시그널. */
+let adventureClickHandler: ((square: Square) => void) | null = null;
+export function setAdventureClickHandler(
+  handler: ((square: Square) => void) | null,
+): void {
+  adventureClickHandler = handler;
+}
+
 eventBus.on('board:squareClicked', ({ square }) => {
+  if (state.mode === 'adventure') {
+    adventureClickHandler?.(square as Square);
+    return;
+  }
   handleSquareClick(square as Square);
 });

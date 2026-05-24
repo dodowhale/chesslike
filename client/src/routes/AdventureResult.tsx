@@ -10,6 +10,7 @@ import {
 } from '@/store/gameStore';
 import { makeId, saveHistoryEntry } from '@/lib/storage/historyRepo';
 import { clearPersistedRun } from '@/lib/adventure/runPersist';
+import { evaluateAchievementsOnRunEnd } from '@/lib/adventure/achievementUnlock';
 
 export default function AdventureResult() {
   const navigate = useNavigate();
@@ -29,6 +30,12 @@ export default function AdventureResult() {
     const earned = run.starShardsThisRun;
     const meta = await loadMetaProgress();
     meta.totalStarShards += earned;
+    // 도전과제 평가 + 자동 잠금해제 + 보상 적립.
+    const unlocked = evaluateAchievementsOnRunEnd(run, outcome(), meta);
+    for (const a of unlocked) {
+      meta.unlockedLocations.push(a.id);
+      meta.totalStarShards += a.reward;
+    }
     await saveMetaProgress(meta);
 
     // 모험 결과를 클래식과 같은 HistoryEntry 슬롯에 저장.
