@@ -136,7 +136,7 @@
 코드 측 마일스톤은 M5까지 완료. 다음 항목은 외부 자산·추가 콘텐츠·검증 작업입니다.
 
 ### 외부 자산 (디자이너 / 사운드 디자이너 협업)
-- [ ] 정식 도트 에셋 — 기물 12종 × 캐릭터 스킨 × 보드 테마 (Default/Forest/Ocean)
+- [ ] 정식 도트 에셋 — 기물 12종 × 캐릭터 스킨 × 보드 테마 (Default/Forest/Ocean) — placeholder generator로 1차 적용됨(`scripts/generate-piece-placeholders.ts`), 정식 아트워크는 후속
 - [x] 막별 보드 테마(Forest/Ocean)에 맞춘 기물 색상 변형 — generator에 character 차원 + BoardScene THEME_COLORS map으로 적용 완료 (직교 시스템)
 - [x] 캐릭터별 기물 스킨(암살자단·신성단 등) — generator CHARACTER_PALETTES 3종 + BoardScene 텍스처 키 prefix로 적용 완료 (정규단 아이보리/암살자단 은회색/신성단 금색, 흑은 baseline 공통)
 - [x] PromotionDialog 등 UI 아이콘 통일 — generator PNG 활용 완료 (PromotionDialog 4 선택지 + GameOverDialog 승자 K). HeaderBar/AdventureEntry/MainMenu 장식 아이콘은 후속
@@ -201,3 +201,8 @@
 - 본 로드맵의 마일스톤 분할 근거는 [docs/superpowers/specs/2026-05-22-docs-enhancement-design.md](./superpowers/specs/2026-05-22-docs-enhancement-design.md) §4.10 참조.
 - 각 마일스톤은 의존성을 가진다: M0 → M1 → M2 → M3 → M4 → M5. 단, M1/M2와 M3/M4는 부분 병행 가능.
 - M6+ 후속 작업은 외부 자산·콘텐츠 확장·인프라 위주로, 코드 구조는 이미 받아들일 준비가 되어 있음 (AudioManager.playBgm, BoardScene piece sprite, server API placeholder 등).
+- M6+ 비주얼·인터랙션 1차(완료)의 디자인 스펙:
+  - Sprite identity·Tween — [`docs/superpowers/specs/2026-05-24-phaser-board-sprite-identity-design.md`](./superpowers/specs/2026-05-24-phaser-board-sprite-identity-design.md) *(gitignore — 로컬 노트)*
+  - 픽셀 도트 글리프 — [`docs/superpowers/specs/2026-05-24-chess-piece-visuals-design.md`](./superpowers/specs/2026-05-24-chess-piece-visuals-design.md) *(gitignore)*
+  - 보드 테마 + 캐릭터 스킨 — [`docs/superpowers/specs/2026-05-25-theme-character-skin-design.md`](./superpowers/specs/2026-05-25-theme-character-skin-design.md) *(gitignore)*
+  - 다이얼로그 PNG 통일 — [`docs/superpowers/specs/2026-05-25-cycle-b-dialog-icons-design.md`](./superpowers/specs/2026-05-25-cycle-b-dialog-icons-design.md) *(gitignore)*

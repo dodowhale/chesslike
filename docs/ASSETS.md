@@ -130,7 +130,60 @@
 - 한국어 시스템 사운드 (체크/메이트 알림)
 - 캐릭터 보이스 (선택 시 짧은 멘트, 옵션)
 
-## 9. Production Pipeline
+## 9. Current Placeholder Implementation (M6+ 1차)
+
+정식 외부 도트 자산 도입 전 단계로, `scripts/generate-piece-placeholders.ts`가 빌드 타임에 PNG를 생성하는 placeholder 시스템이 정착되어 있다. 현재 구조:
+
+### 9.1 기물 sprite (36 PNG)
+
+- 32x32 PNG, 투명 배경, RGBA8.
+- 디렉토리: `client/public/assets/pieces/{characterId}/{side}{type}.png`
+  - characterId ∈ `standard` | `assassins` | `saints`
+  - side ∈ `w` | `b`
+  - type ∈ `K` | `Q` | `R` | `B` | `N` | `P`
+  - 총 3 × 2 × 6 = 36 PNG
+- 같은 글리프(`PIECE_GLYPH` 32x32 ASCII 그리드)에 캐릭터별 색 팔레트를 적용해 출력한다. 흑 진영은 캐릭터 무관 baseline 색.
+
+### 9.2 캐릭터별 색 팔레트
+
+| characterId | wFill | wOutline |
+|---|---|---|
+| `standard` | `#f5e9d3` 옅은 아이보리 | `#2a2017` 다크 브라운 |
+| `assassins` | `#a8a8b8` 어두운 은회색 | `#1a1a22` 블랙 |
+| `saints` | `#f5d97c` 금색 | `#7a5511` 어두운 황금 |
+
+흑 진영 공통:
+- `bFill`: `#2f231a` 짙은 우드
+- `bOutline`: `#7a5a40` mid 브라운
+
+### 9.3 보드 테마 (BoardScene 런타임)
+
+기물 PNG와 직교 — 보드 칸 색만 변경. `client/src/lib/phaser/scenes/BoardScene.ts`의 `THEME_COLORS` map에서 정의:
+
+| theme | LIGHT 칸 | DARK 칸 |
+|---|---|---|
+| `default` | `#f0d9b5` | `#b58863` |
+| `forest` | `#d4e09b` | `#5b8a3a` |
+| `ocean` | `#cce6e8` | `#3e7a8b` |
+
+모험 모드 막에 따라 자동 매핑: 1막=default, 2막=forest, 3막=ocean. 클래식=default.
+
+### 9.4 글리프 무결성
+
+generator에 `const GLYPH_ROW = /^[ .X]{32}$/` 정규식 어설션이 있어 빌드 시점에 잘못된 길이(31줄, 33-char 줄) 또는 비표준 문자(탭, 전각 공백 등)를 차단한다. 글리프 행 끝의 trailing space는 의미 있는 픽셀(투명)이라 에디터의 `trim-trailing-whitespace` 옵션이 켜져 있으면 손상 가능 — 본 파일 상단에 NOTE 코멘트로 명시되어 있음.
+
+### 9.5 UI 컴포넌트에서 PNG 활용
+
+다이얼로그 컴포넌트가 같은 PNG 자산을 `<img>`로 직접 참조 — `PromotionDialog`는 폰 승급 4 선택지에, `GameOverDialog`는 승자 K 표시에. 자세한 흐름은 ARCHITECTURE §7.8 참조.
+
+### 9.6 정식 자산 전환
+
+위 구조는 정식 외부 도트 자산 도입 시에도 그대로 활용 가능:
+- 경로/크기/디렉토리 동일 — 파일 교체만으로 generator 폐기 가능
+- 캐릭터별 색 분기는 정식 도트에서 캐릭터별 sprite sheet로 자연스럽게 확장
+- 보드 테마는 BoardScene 상수라 외부 자산과 무관 (정식 보드 텍스처 도입 시 분기)
+
+## 10. Production Pipeline
 
 - **저작 도구**: Aseprite (스프라이트), GarageBand/BFXR (SFX)
 - **포맷**:

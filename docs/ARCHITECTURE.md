@@ -279,6 +279,17 @@ BootScene이 36 텍스처 키(`'standard-wK'`/`'assassins-wK'`/`'saints-wK'` 등
 
 총 11 조합. 추가 캐릭터·테마는 각 map에 항목 추가만으로 자연스럽게 확장 가능.
 
+### 7.8 다이얼로그 PNG 아이콘 (M6+ Cycle B)
+
+게임 안 sprite와 UI 다이얼로그의 시각 톤을 통일하기 위해 PromotionDialog·GameOverDialog가 generator PNG를 직접 사용한다. gameStore에 export된 헬퍼 `getActiveCharacterId(): CharacterId`(emitBoard의 selectCharacter와 동일 로직 — 한 곳 정의)를 dialogs가 호출.
+
+- **PromotionDialog** (`client/src/components/dialogs/PromotionDialog.tsx`): 4 선택지(Q/R/B/N)에 `<img src="/assets/pieces/${characterId}/${side}${key}.png">`. 폰 색은 `pendingPromotion.to.charAt(1)`로 결정 (rank 8→`'w'`, 1→`'b'` — chess.js promotion 인보컨트가 두 rank만 허용).
+- **GameOverDialog** (`client/src/components/dialogs/GameOverDialog.tsx`): `statusEmoji()` 문자열 헬퍼 폐기 → `StatusGlyph` 컴포넌트. winner 케이스(checkmate/resignation/timeout)는 `<img src=".../${winner}K.png">` 96px, 그 외 무승부는 🤝 텍스트 유지. `<Show when={isWinnerStatus(props.status) ? props.status : null}>` 패턴으로 SolidJS reactivity 유지(`const s = props.status`를 컴포넌트 body 최상위에서 읽는 것은 setup 시점 1회만 평가되어 stale).
+
+모든 `<img>`는 `style={{ 'image-rendering': 'pixelated' }}` 인라인 적용으로 픽셀 아트 선명도 보장. Phaser BootScene이 같은 PNG 36개를 preload하지만 SolidJS `<img>`는 별도 DOM request라 브라우저 HTTP 캐시를 공유 — 첫 로드 시 미세한 깜빡임 가능하나 무시 가능.
+
+장식 아이콘(HeaderBar/AdventureEntry/MainMenu의 ♞/♟/♛)은 본 작업 범위 외 — 후속에서 같은 PNG 자산을 활용한 `<PieceIcon>` 재사용 컴포넌트로 통일 예정.
+
 ## 8. 관련 문서
 
 - [SPEC.md](./SPEC.md) — 타입 정의와 데이터 구조

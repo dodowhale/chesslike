@@ -234,6 +234,26 @@ interface AchievementDef {
 
 도전과제 잠금해제 ID는 `MetaProgress.unlockedLocations` 배열에 누적된다(필드명이 "장소" 함의이지만 SPEC §4.3 이후 도전과제도 함께 수용하기로 결정). `evaluateAchievementsOnRunEnd(run, outcome, meta)`는 모험 런 종료 시점에 조건을 평가해 새로 충족된 도전과제를 반환하며, 호출처는 `meta.unlockedLocations.push` + `meta.totalStarShards += reward`로 합산한다.
 
+### 4.4 비주얼·인터랙션 타입 (M6+, 시각 시스템)
+
+게임 데이터 타입은 아니지만 BoardScene/UI가 공유하는 비주얼 식별자(자세한 흐름은 ARCHITECTURE §7.6~§7.8 참조):
+
+```ts
+// client/src/lib/phaser/bridge/eventBus.ts
+export type LastMoveKind = 'normal' | 'capture' | 'castling' | 'en-passant' | 'promotion';
+export interface LastMove {
+  from: string; to: string; kind: LastMoveKind;
+  rookFrom?: string; rookTo?: string;
+  victimSquare?: string;          // en-passant 시 캡처되는 폰의 실제 칸
+  promotedTo?: string;             // promotion 시 'q'|'r'|'b'|'n'
+  capturedKey?: string;            // 캡처된 sprite의 PIECE_KEY (예: 'bP')
+}
+export type BoardTheme = 'default' | 'forest' | 'ocean';
+export type CharacterId = 'standard' | 'assassins' | 'saints';
+```
+
+`BoardRenderState`(eventBus.ts)에 `lastMove?: LastMove`, `theme?: BoardTheme`, `characterId?: CharacterId`가 옵셔널 필드로 들어가며, gameStore의 `emitBoard()`가 mode/act/run.characterId로 자동 결정해 전달한다. `Character.id`(§4.1)와 `CharacterId` 두 타입이 의도적으로 분리되어 있는데, `CharacterId`는 sprite/PNG 디렉토리 식별자 (값 집합은 동일하지만 비주얼 시스템과 게임 데이터 모델을 격리).
+
 ## 5. Combat & Edge Cases (Adventure Mode)
 
 ### 5.1 일반 전투 처리

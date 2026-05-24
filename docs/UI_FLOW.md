@@ -165,6 +165,15 @@
 - 다음 행동 버튼들
 - 상세 정보 펼치기/접기
 
+### 5.4 다이얼로그 PNG 아이콘 (M6+ Cycle B)
+
+`PromotionDialog`와 `GameOverDialog`는 게임 안 sprite와 시각 톤을 통일하기 위해 generator PNG(`/assets/pieces/{characterId}/{w,b}{K..P}.png`)를 `<img>`로 직접 사용한다.
+
+- **폰 승급**: 4 선택지(Q/R/B/N) 각각 활성 캐릭터·폰 색에 맞는 PNG 표시. 폰 색은 `pendingPromotion.to`의 rank로 결정 (rank 8→백, 1→흑).
+- **게임 종료**: 체크메이트/기권/시간만료 시 승자 K PNG(96px); 무승부는 🤝 텍스트 유지.
+- **활성 캐릭터**: `gameStore.getActiveCharacterId()` 헬퍼로 모험 run.characterId 또는 standard 결정. emitBoard와 단일 출처 공유.
+- 모든 `<img>`에 `image-rendering: pixelated` 인라인 style로 픽셀 아트 선명도 보장.
+
 ## 6. 모바일 반응형 가이드라인
 
 - **세로 모드 우선**. 가로 모드는 보드 좌우에 패널을 둘 수 있는 데스크탑 레이아웃.

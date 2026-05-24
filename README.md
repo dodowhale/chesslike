@@ -25,7 +25,8 @@
 | M3 모험 모드 MVP | ✅ 완료 |
 | M4 메타 진행 + 추가 콘텐츠 | ✅ 완료 |
 | M5 폴리시 | ✅ 완료 (외부 자산은 M6+) |
-| M6+ 후속 (자산·확장·인프라) | ⏳ TODO에 별도 섹션 |
+| M6+ 비주얼·인터랙션 1차 | ✅ Sprite identity·Tween / 픽셀 도트 글리프 / 보드 테마 / 캐릭터 스킨 / 다이얼로그 PNG 통일 |
+| M6+ 후속 (외부 자산·콘텐츠·인프라) | ⏳ TODO에 별도 섹션 |
 
 자세한 진행 항목과 M6+ 후속 작업은 [docs/TODO.md](./docs/TODO.md) 참조.
 
@@ -129,12 +130,20 @@ __chesslike.bus                      // eventBus 인스턴스
 
 production 빌드에서는 자동 제거됩니다.
 
-## 🛣 M6+ 후속
+## 🛣 M6+ 진행 상황
 
-코드 측 모든 마일스톤(M0~M5)은 완료된 상태이며, 다음은 외부 자산·콘텐츠 확장·인프라 위주입니다:
+코드 측 모든 마일스톤(M0~M5)은 완료. M6+ 비주얼·인터랙션 1차 작업도 정착되어 다음과 같이 진행되었습니다:
 
-- **외부 자산** — 정식 도트 에셋(기물·보드·UI·캐릭터·보스·아이템), BGM 5트랙, SFX 패키지
-- **Phaser 보드 강화** — sprite identity 기반 리팩토링 → 기물 tween, 드래그·드롭, HP 변화 애니메이션
+**완료 (M6+ 비주얼·인터랙션 1차)**:
+- **Sprite identity·Tween** — `BoardScene`에 `Map<square, PieceSprite>` 도입, `pieceLayer.removeAll(true)` 제거. 기물 이동 200ms `Sine.easeInOut` Tween + 캡처/캐슬링/앙파상/승급 special case + HP 바 width tween + 감소 시 빨간 flash 100ms + AI 응답 250ms 지연 (reduced motion 시 즉시).
+- **픽셀 도트 글리프** — `scripts/generate-piece-placeholders.ts`의 5x7 영문자 폰트를 32x32 ASCII 그리드 실루엣으로 교체. `GLYPH_ROW = /^[ .X]{32}$/` 무결성 어설션이 빌드 시점에 잘못된 그리드 차단.
+- **보드 테마** — `default`(베이지/우드) / `forest`(잎새 녹) / `ocean`(청록) 3종. 모험 act에 따라 자동 매핑 (1막→default, 2막→forest, 3막→ocean). 클래식은 항상 default.
+- **캐릭터별 기물 스킨** — `standard`(아이보리) / `assassins`(은회색) / `saints`(금색) 백 진영 팔레트. 흑은 공통 baseline. 36 PNG `client/public/assets/pieces/{characterId}/{w,b}{K..P}.png`.
+- **다이얼로그 PNG 통일** — `PromotionDialog`(4 선택지) / `GameOverDialog`(승자 K) Unicode 글리프 → generator PNG `<img>`. 활성 캐릭터·진영 색 자동 적용.
+
+**잔여 (외부 자산·콘텐츠·인프라 위주)**:
+- **외부 자산** — 정식 도트 에셋(노드 아이콘·보스 스프라이트·캐릭터 초상화·아이템 17종), BGM 5트랙, SFX 패키지
+- **Phaser 보드 강화** — 드래그·드롭 입력, 보스 페이즈 시각 인터스티셜, HeaderBar/AdventureEntry/MainMenu 장식 아이콘 통일
 - **AI 강화** — 보스 전용 강한 AI, 일반 모험 AI를 random에서 약한 Stockfish로
 - **콘텐츠 확장** — 요새단/혼돈단 캐릭터, 도전과제 5→20종, 통계 화면, 이벤트/아이템 풀 확장
 - **서버 활성화** — SQLite + Drizzle 스키마, 랭킹/도전과제 검증, 인증
