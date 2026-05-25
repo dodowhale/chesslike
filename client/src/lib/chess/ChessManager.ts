@@ -68,6 +68,13 @@ export interface ChessManager {
   /** PGN 문자열 (헤더 + 무브). headers 인자는 White/Black/Event 등 추가 메타. */
   toPgn(headers?: Record<string, string>): string;
   reset(fen?: string): { ok: true } | { ok: false; reason: string };
+  /**
+   * 무브를 적용하지 않은 채 active color만 swap한다. 모험 모드에서 캡처 실패
+   * (defender HP가 남아 attacker 원위치)로 한 턴이 소비된 경우 후속 차례 흐름을
+   * 살리기 위해 사용. en passant target은 무효화, halfmove clock +1,
+   * fullmove number는 흑→백 swap 시 +1.
+   */
+  swapTurnOnly(): { ok: true } | { ok: false; reason: string };
 }
 
 interface ParsedUci {
@@ -303,6 +310,26 @@ export function createChessManager(initialFen: string = INITIAL_FEN): ChessManag
     }
   }
 
+  function swapTurnOnly(): { ok: true } | { ok: false; reason: string } {
+    // FEN: <board> <active> <castling> <ep> <halfmove> <fullmove>
+    const parts = chess.fen().split(' ');
+    if (parts.length !== 6) return { ok: false, reason: 'bad-fen' };
+    const [board, active, castling, , half, full] = parts as [
+      string, string, string, string, string, string,
+    ];
+    const newActive = active === 'w' ? 'b' : 'w';
+    const newHalf = String(Number(half) + 1);
+    // 흑 차례가 끝나면 fullmove +1.
+    const newFull = active === 'b' ? String(Number(full) + 1) : full;
+    const newFen = [board, newActive, castling, '-', newHalf, newFull].join(' ');
+    try {
+      chess.load(newFen);
+      return { ok: true };
+    } catch (err) {
+      return { ok: false, reason: err instanceof Error ? err.message : 'invalid-fen' };
+    }
+  }
+
   return {
     getFen: () => chess.fen(),
     turn: () => chess.turn(),
@@ -322,5 +349,6 @@ export function createChessManager(initialFen: string = INITIAL_FEN): ChessManag
     history,
     toPgn,
     reset,
+    swapTurnOnly,
   };
 }

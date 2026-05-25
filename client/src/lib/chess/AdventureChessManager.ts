@@ -193,7 +193,10 @@ export function createAdventureChessManager(opts: AdventureChessManagerOptions) 
 
     if (remainingHp > 0) {
       // 4a. 캡처 실패 — defender HP만 감소, attacker 원위치 (체스 무브 적용 안 함)
+      // chess.js 무브를 적용하지 않으므로 active color가 그대로 남아 후속 차례가
+      // 멈춘다. swapTurnOnly로 차례만 넘긴다 (SPEC §5.1 "공격 시도 = 한 턴 소비").
       defender.hp = remainingHp;
+      chess.swapTurnOnly();
       return {
         ok: true,
         outcome: {

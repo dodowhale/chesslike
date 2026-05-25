@@ -22,6 +22,9 @@
 - `BoardScene` 입력 처리: 셀별 `setInteractive` → 단일 zone 기반 입력 + `pixelToSquare` 역산. 인접 셀 hit 우선순위 모호함 제거.
 - `evaluateAchievementsOnRunEnd` 시그니처: 누적형 도전과제 평가를 위해 `RunStats` 인자 추가 (옵셔널, 기존 호출처 호환 유지).
 
+### Fixed
+- 모험 모드 캡처 실패(damaged) 시 chess.js active color가 swap되지 않아 후속 차례 흐름이 멈추던 버그. `ChessManager.swapTurnOnly()` 추가하고 `AdventureChessManager.tryMove`의 damaged 분기에서 호출하도록 수정 (FEN active color swap + en-passant target 무효화 + halfmove +1, 흑→백 시 fullmove +1).
+
 ### Notes
 - 본 사이클은 외부 자산(스프라이트/BGM/SFX), 서버 인프라(SQLite/leaderboard/인증), 새 캐릭터(요새단/혼돈단), 테스트 자동화, 드래그·드롭 입력은 제외. 별도 사이클에서 후속.
 
