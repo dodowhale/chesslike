@@ -396,7 +396,7 @@ export class AdventureRunController implements SceneController {
     const result = this.boardChess.tryMove(uci);
     if (!result.ok) return result;
     this.syncBoard(result.lastMove);
-    if (this.checkBoardEndCondition('w')) return result;
+    if (this.checkBoardEndCondition()) return result;
     // 사용자 차례 끝 — AI 응답을 살짝 지연시켜 sprite Tween이 화면에 보이게.
     const delay = settings.accessibility.reducedMotion ? 0 : 250;
     this.aiReplyTimer = setTimeout(() => {
@@ -412,14 +412,14 @@ export class AdventureRunController implements SceneController {
     // 약한 random AI (M5 MVP). 후속에서 Stockfish 또는 보스 전용 AI로 교체.
     const legalUcis = this.collectLegalUcis('b');
     if (legalUcis.length === 0) {
-      this.checkBoardEndCondition('b');
+      this.checkBoardEndCondition();
       return;
     }
     const pick = legalUcis[Math.floor(Math.random() * legalUcis.length)]!;
     const result = this.boardChess.tryMove(pick);
     if (!result.ok) return;
     this.syncBoard(result.lastMove);
-    this.checkBoardEndCondition('b');
+    this.checkBoardEndCondition();
   }
 
   private collectLegalUcis(_color: 'w' | 'b'): string[] {
@@ -447,8 +447,15 @@ export class AdventureRunController implements SceneController {
     setAdventureBoardSnapshot(this.boardChess.getFen(), hps, lastMove, opts);
   }
 
-  /** 보드 종료 조건 검사. 처리되었다면 true. */
-  private checkBoardEndCondition(turnAfterMove: 'w' | 'b'): boolean {
+  /**
+   * 보드 종료 조건 검사. 처리되었다면 true.
+   * winner 계산은 호출처 인자가 아니라 `chess.turn()`(현재 무브 권한 진영)을 기준으로 한다 —
+   * `isCheckmate`는 현재 turn 진영이 체크 상태 + 합법수 없음이므로 그 진영이 loser, 반대가
+   * winner. 호출처에서 turnAfterMove 같은 메타 인자를 넘기던 이전 구조는 의미가 모호해
+   * (예: scheduleAiReply의 무브 적용 후 vs 무브 실패 후 같은 'b' 전달) winner를 정 반대로
+   * 설정하는 버그를 만들었었다.
+   */
+  private checkBoardEndCondition(): boolean {
     if (!this.boardChess) return false;
     const node = this.currentNode();
     const isBoss = node?.type === 'boss';
@@ -468,8 +475,10 @@ export class AdventureRunController implements SceneController {
     }
 
     if (this.boardChess.isCheckmate()) {
-      // 체스 체크메이트는 현재 차례 진영 패배. SPEC §4.2 보스는 체크메이트만 페이즈 종료.
-      setStatus({ kind: 'checkmate', winner: turnAfterMove === 'w' ? 'b' : 'w' });
+      // chess.turn()이 체크메이트당한 진영(loser). winner는 그 반대.
+      const loser = this.boardChess.turn();
+      const winner: 'w' | 'b' = loser === 'w' ? 'b' : 'w';
+      setStatus({ kind: 'checkmate', winner });
       return true;
     }
     if (this.boardChess.isStalemate()) {

@@ -157,6 +157,7 @@
 - [ ] 보스 페이즈 시각 인터스티셜 (페이즈 클리어 → 다음 페이즈 진입 사이 효과)
 - [x] 모험 damaged 후 turn swap — `ChessManager.swapTurnOnly()` 도입 + `AdventureChessManager.tryMove` damaged 분기에서 호출. 캡처 실패 후 chess.js active color가 안 바뀌어 게임이 정지하던 버그 수정.
 - [x] 보스 king 공격 시 chess.js가 e8을 합법수로 제공해 capture 분기 진입 → king 캡처 합법 무브 인정 안 됨 → stuck 버그. `AdventureChessManager.tryMove`에서 `defender.type==='k'`이면 항상 damaged 처리 + HP 0 clamp. SPEC §4.2 "보스 KingHp=0은 약화의 자리표, 페이즈 종료는 체크메이트만" 정확 반영.
+- [x] 보스 체크메이트 winner 역전 버그 — `checkBoardEndCondition`이 `turnAfterMove`로 winner를 잘못 계산해 사용자 체크메이트가 finalize defeat로 흘렀음. `chess.turn()`(loser) 기반으로 winner 직접 계산, 인자 제거.
 
 ### 코드 — AI 강화
 - [ ] 보스 전용 강한 AI (Stockfish 또는 페이즈별 사전 정의 무브 시퀀스)
