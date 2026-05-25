@@ -11,30 +11,33 @@ export const ITEM_POOL: Item[] = [
   { id: 'sharp-blade', name: '날카로운 칼', rarity: 'common', category: 'stat', description: '공격력 +3', modifier: { attack: 3 } },
   { id: 'leather-armor', name: '가죽 갑옷', rarity: 'common', category: 'stat', description: 'HP +6, 공격력 +1', modifier: { hp: 6, attack: 1 } },
   { id: 'healing-herb', name: '치유 약초', rarity: 'common', category: 'effect', description: '턴마다 HP +1', modifier: { healPerTurn: 1 } },
-  { id: 'spike-helm', name: '가시 투구', rarity: 'common', category: 'effect', description: '피격 시 반사 데미지 1', modifier: { thornsDamage: 1 } },
+  { id: 'spike-helm', name: '가시 투구', rarity: 'common', category: 'effect', description: '피격 시 반사 +1', modifier: { thornsDamage: 1 } },
   { id: 'oak-staff', name: '오크 지팡이', rarity: 'common', category: 'stat', description: '공격력 +2', modifier: { attack: 2 } },
   { id: 'sturdy-cloak', name: '튼튼한 망토', rarity: 'common', category: 'stat', description: 'HP +8', modifier: { hp: 8 } },
   { id: 'training-band', name: '훈련의 띠', rarity: 'common', category: 'stat', description: 'HP +4, 공격력 +1', modifier: { hp: 4, attack: 1 } },
-  { id: 'fang-amulet', name: '엄니 부적', rarity: 'common', category: 'effect', description: '반사 +2', modifier: { thornsDamage: 2 } },
+  { id: 'fang-amulet', name: '엄니 부적', rarity: 'common', category: 'effect', description: '피격 시 반사 +2', modifier: { thornsDamage: 2 } },
   { id: 'minor-potion', name: '약한 회복약', rarity: 'common', category: 'effect', description: '턴마다 HP +2', modifier: { healPerTurn: 2 } },
 
   // ---------- Uncommon (5) ----------
-  { id: 'knight-spurs', name: '기사의 박차', rarity: 'uncommon', category: 'passive', description: '나이트 점프 거리 +1', modifier: { jumpOver: true, range: 1 } },
+  // NOTE: 원안은 "나이트 점프 거리 +1"(jumpOver/range modifier)이었으나 chess.js 룰
+  //   확장이 필요해 본 사이클(M6+)에서는 직관적 stat boost로 임시 교체. 정식
+  //   확장은 후속 사이클 (TODO.md "코드 — Phaser 보드 인터랙션 강화" 항목).
+  { id: 'knight-spurs', name: '기사의 박차', rarity: 'uncommon', category: 'stat', description: '장착 기물 HP +15, 공격력 +5', modifier: { hp: 15, attack: 5 } },
   { id: 'royal-crown', name: '왕관', rarity: 'uncommon', category: 'stat', description: 'HP +20, 공격력 +5', modifier: { hp: 20, attack: 5 } },
   { id: 'phoenix-feather', name: '불사조 깃털', rarity: 'uncommon', category: 'effect', description: '턴마다 HP +5', modifier: { healPerTurn: 5 } },
-  { id: 'thorn-mantle', name: '가시 망토', rarity: 'uncommon', category: 'effect', description: '반사 +5', modifier: { thornsDamage: 5 } },
+  { id: 'thorn-mantle', name: '가시 망토', rarity: 'uncommon', category: 'effect', description: '피격 시 반사 +5', modifier: { thornsDamage: 5 } },
   { id: 'titan-belt', name: '거인의 허리띠', rarity: 'uncommon', category: 'stat', description: 'HP +15, 공격력 +3', modifier: { hp: 15, attack: 3 } },
 
   // ---------- Rare (10) — M4 해금 ----------
   { id: 'demon-edge', name: '마검의 날', rarity: 'rare', category: 'stat', description: '공격력 +8', modifier: { attack: 8 } },
   { id: 'aegis-plate', name: '아이기스 판금', rarity: 'rare', category: 'stat', description: 'HP +30', modifier: { hp: 30 } },
-  { id: 'ironbark-amulet', name: '강목 부적', rarity: 'rare', category: 'effect', description: '반사 +8, 턴마다 HP +3', modifier: { thornsDamage: 8, healPerTurn: 3 } },
+  { id: 'ironbark-amulet', name: '강목 부적', rarity: 'rare', category: 'effect', description: '피격 시 반사 +8, 턴마다 HP +3', modifier: { thornsDamage: 8, healPerTurn: 3 } },
   { id: 'storm-glaive', name: '폭풍 글레이브', rarity: 'rare', category: 'stat', description: 'HP +12, 공격력 +6', modifier: { hp: 12, attack: 6 } },
   { id: 'warden-mantle', name: '수호자의 망토', rarity: 'rare', category: 'effect', description: '턴마다 HP +8', modifier: { healPerTurn: 8 } },
   { id: 'runic-gauntlet', name: '룬각인 건틀릿', rarity: 'rare', category: 'stat', description: 'HP +18, 공격력 +4', modifier: { hp: 18, attack: 4 } },
-  { id: 'serpent-fang', name: '독사의 송곳니', rarity: 'rare', category: 'effect', description: '공격력 +7, 반사 +3', modifier: { attack: 7, thornsDamage: 3 } },
+  { id: 'serpent-fang', name: '독사의 송곳니', rarity: 'rare', category: 'effect', description: '공격력 +7, 피격 시 반사 +3', modifier: { attack: 7, thornsDamage: 3 } },
   { id: 'oathkeeper-shield', name: '맹약의 방패', rarity: 'rare', category: 'effect', description: 'HP +24, 턴마다 HP +2', modifier: { hp: 24, healPerTurn: 2 } },
-  { id: 'phantom-cloak', name: '환영의 망토', rarity: 'rare', category: 'effect', description: '턴마다 HP +5, 반사 +3', modifier: { healPerTurn: 5, thornsDamage: 3 } },
+  { id: 'phantom-cloak', name: '환영의 망토', rarity: 'rare', category: 'effect', description: '턴마다 HP +5, 피격 시 반사 +3', modifier: { healPerTurn: 5, thornsDamage: 3 } },
   { id: 'dragon-scale', name: '용비늘 갑옷', rarity: 'rare', category: 'stat', description: 'HP +20, 공격력 +5', modifier: { hp: 20, attack: 5 } },
 
   // ---------- Legendary (5) — M4 해금, 보스 보상 ----------
@@ -42,7 +45,7 @@ export const ITEM_POOL: Item[] = [
   { id: 'soul-of-titan', name: '거인의 영혼', rarity: 'legendary', category: 'effect', description: 'HP +25, 공격력 +5, 매 턴 HP +5', modifier: { hp: 25, attack: 5, healPerTurn: 5 } },
   { id: 'worldtree-bough', name: '세계수 가지', rarity: 'legendary', category: 'effect', description: 'HP +35, 턴마다 HP +6', modifier: { hp: 35, healPerTurn: 6 } },
   { id: 'sunforged-blade', name: '햇빛으로 벼린 검', rarity: 'legendary', category: 'stat', description: '공격력 +15', modifier: { attack: 15 } },
-  { id: 'eclipse-aegis', name: '식의 방패', rarity: 'legendary', category: 'effect', description: 'HP +40, 반사 +10', modifier: { hp: 40, thornsDamage: 10 } },
+  { id: 'eclipse-aegis', name: '식의 방패', rarity: 'legendary', category: 'effect', description: 'HP +40, 피격 시 반사 +10', modifier: { hp: 40, thornsDamage: 10 } },
 ];
 
 export function getItemById(id: string): Item | undefined {

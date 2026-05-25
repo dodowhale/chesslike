@@ -14,9 +14,9 @@ function modifierLabel(mod: Modifier): string {
   if (mod.hp) parts.push(`HP+${mod.hp}`);
   if (mod.attack) parts.push(`ATK+${mod.attack}`);
   if (mod.healPerTurn) parts.push(`매턴 HP+${mod.healPerTurn}`);
-  if (mod.thornsDamage) parts.push(`반사+${mod.thornsDamage}`);
-  if (mod.range) parts.push(`사거리+${mod.range}`);
-  if (mod.jumpOver) parts.push('점프');
+  if (mod.thornsDamage) parts.push(`피격 시 반사+${mod.thornsDamage}`);
+  // range / jumpOver는 후속 구현 (chess.js 룰 확장 필요). 칩 표시도 보류 — 작동하지
+  // 않는 효과를 사용자에게 노출하면 혼란을 야기.
   return parts.length > 0 ? parts.join(' · ') : '효과 없음';
 }
 

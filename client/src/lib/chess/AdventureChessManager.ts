@@ -78,6 +78,35 @@ function effectiveMaxHp(piece: AdventurePiece, globalMods: Modifier[]): number {
   return Math.max(1, piece.maxHp + itemBonus + globalBonus);
 }
 
+/** 피격 시 attacker에게 되돌려주는 반사 데미지 — 장착 + 글로벌 합산. */
+function effectiveThornsDamage(piece: AdventurePiece, globalMods: Modifier[]): number {
+  const itemBonus = piece.items.reduce(
+    (acc, item) => acc + (item.modifier.thornsDamage ?? 0),
+    0,
+  );
+  const globalBonus = globalMods.reduce(
+    (acc, mod) => acc + (mod.thornsDamage ?? 0),
+    0,
+  );
+  return Math.max(0, itemBonus + globalBonus);
+}
+
+/** turn-start 시 piece 1개에 적용되는 healPerTurn — 아이템 + 글로벌 합산. */
+function effectivePieceHealPerTurn(
+  piece: AdventurePiece,
+  globalMods: Modifier[],
+): number {
+  const itemBonus = piece.items.reduce(
+    (acc, item) => acc + (item.modifier.healPerTurn ?? 0),
+    0,
+  );
+  const globalBonus = globalMods.reduce(
+    (acc, mod) => acc + (mod.healPerTurn ?? 0),
+    0,
+  );
+  return Math.max(0, itemBonus + globalBonus);
+}
+
 function basePieceStats(type: AdventurePiece['type']): { hp: number; attack: number } {
   // docs/modes/ADVENTURE.md §5 베이스 스탯 표. 캐릭터별 차이는 baseStatsOverride.
   switch (type) {
@@ -111,16 +140,22 @@ export function createAdventureChessManager(opts: AdventureChessManagerOptions) 
   // 멱등성 보장: 같은 차례에 두 번 호출되어도 한 번만 힐.
   let lastHealedKey = '';
 
-  /** SPEC §5.6 트리거 발화 — 매 턴 시작 시 healPerTurn. */
+  /**
+   * SPEC §5.6 트리거 발화 — 매 턴 시작 시 healPerTurn.
+   * - 캐릭터 패시브 healPerTurn(opts.turnStartHeal) — 자기 진영 모든 piece에 동일 적용.
+   * - 아이템·글로벌 modifier healPerTurn — 장착·범위에 따라 piece별 차등 적용.
+   */
   function applyTurnStartHeal(side: 'w' | 'b'): void {
-    if (turnStartHeal <= 0) return;
     // 차례 진영 + chess.js 무브 수 조합으로 멱등 키.
     const key = `${side}:${chess.moves().length}`;
     if (lastHealedKey === key) return;
     lastHealedKey = key;
     for (const piece of piecesById.values()) {
       if (piece.side !== side) continue;
-      const newHp = Math.min(piece.maxHp, piece.hp + turnStartHeal);
+      const itemHeal = effectivePieceHealPerTurn(piece, globalMods);
+      const totalHeal = turnStartHeal + itemHeal;
+      if (totalHeal <= 0) continue;
+      const newHp = Math.min(piece.maxHp, piece.hp + totalHeal);
       piece.hp = newHp;
     }
   }
@@ -196,12 +231,20 @@ export function createAdventureChessManager(opts: AdventureChessManagerOptions) 
     // 종료 자리표가 아니므로 그대로 진행해 체크메이트로만 페이즈가 끝난다.
     const defenderIsKing = defender.type === 'k';
 
+    // 피격(공격당한) 측의 반사 데미지 — defender 장착·글로벌 thornsDamage 합산.
+    // 본 사이클은 attacker가 반사로 죽지 않도록 hp를 최소 1로 clamp (상호 사망 처리는
+    // chess.js의 attacker 칸 비우기 우회가 필요해 후속).
+    const thornsToAttacker = effectiveThornsDamage(defender, globalMods);
+
     if (defenderIsKing || remainingHp > 0) {
       // 4a. 캡처 실패(또는 king) — defender HP만 감소, attacker 원위치.
       // chess.js 무브를 적용하지 않으므로 active color가 그대로 남아 후속 차례가
       // 멈춘다. swapTurnOnly로 차례만 넘긴다 (SPEC §5.1 "공격 시도 = 한 턴 소비").
       const clampedRemaining = Math.max(0, remainingHp);
       defender.hp = clampedRemaining;
+      if (thornsToAttacker > 0) {
+        attacker.hp = Math.max(1, attacker.hp - thornsToAttacker);
+      }
       chess.swapTurnOnly();
       return {
         ok: true,
@@ -225,6 +268,9 @@ export function createAdventureChessManager(opts: AdventureChessManagerOptions) 
     // capturedSquare에서 defender 제거 (앙파상은 capturedSquare !== to)
     piecesBySquare.delete(defender.square);
     piecesById.delete(defender.id);
+    if (thornsToAttacker > 0) {
+      attacker.hp = Math.max(1, attacker.hp - thornsToAttacker);
+    }
     relocatePiece(attacker, real.move.from, real.move.to);
     if (real.move.promotion) applyPromotion(attacker, real.move.promotion);
     return {

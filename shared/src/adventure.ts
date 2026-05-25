@@ -4,9 +4,18 @@ export type Side = 'w' | 'b';
 export interface Modifier {
   hp?: number;
   attack?: number;
+  /**
+   * 사거리/점프 확장 modifier — 후속 구현 예정.
+   * chess.js의 표준 무브 규칙 위에 추가 합법수를 얹는 작업이 필요해 본 사이클
+   * (M6+) 범위 외. 아이템·캐릭터 설계 시 사용 금지. 본 modifier가 modifier에
+   * 들어 있어도 무브 계산에 영향이 없다는 점 유의.
+   */
   range?: number;
+  /** 위와 동일. 후속 구현. */
   jumpOver?: boolean;
+  /** 매 턴 시작 시 자기 진영 모든 piece에 적용되는 HP 회복 (장착·캐릭터 패시브·글로벌 합산). */
   healPerTurn?: number;
+  /** 피격(공격당한) 시 attacker에게 되돌려주는 반사 데미지. 캡처/damaged 양쪽 모두 적용. */
   thornsDamage?: number;
 }
 
