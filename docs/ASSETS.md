@@ -211,3 +211,224 @@ generator에 `const GLYPH_ROW = /^[ .X]{32}$/` 정규식 어설션이 있어 빌
   │   └── adventure/
   └── bgm/
   ```
+
+## 11. Delivery Spec — 디자이너 / 사운드 디자이너 발주용 정밀 스펙
+
+본 섹션은 외부 디자이너·사운드 디자이너에게 발주할 때 한 페이지에서 모든 수치·팔레트·포맷을 확인할 수 있도록 정리한 표다. **모든 값은 실 코드(`scripts/generate-piece-placeholders.ts`, `client/src/lib/phaser/scenes/BoardScene.ts`, `client/src/lib/audio/AudioManager.ts`)에서 추출**된 수치이며, 변경 시 본 문서와 코드를 함께 업데이트할 것.
+
+### 11.1 공통 규약
+
+| 항목 | 값 |
+|---|---|
+| 픽셀 아트 기준 그리드 | 32×32 |
+| 이미지 포맷 | PNG (RGBA8, 비트심도 8, 무손실) |
+| 배경 | **완전 투명** (alpha=0) |
+| 색공간 | sRGB |
+| 안티앨리어싱 | **금지** — 인접 픽셀 보간 없는 hard-edge 도트 |
+| 파일명 규약 | 소문자 + 케밥 케이스, 확장자 `.png`/`.ogg`/`.wav` |
+| 렌더 측 | Phaser `image-rendering: pixelated` 강제 + `setDisplaySize`로 정수 배율 스케일 |
+
+### 11.2 기물 (12종 × 캐릭터 3 = 36 PNG)
+
+| 항목 | 값 |
+|---|---|
+| 캔버스 사이즈 | **32×32 px** (필수, 변경 불가 — BootScene이 키 기준으로 preload) |
+| 실 표시 사이즈 | **52×52 px** (보드 TILE 56 - 여백 4, Phaser가 자동 스케일 ×1.625) |
+| 디렉토리 | `client/public/assets/pieces/{characterId}/{side}{type}.png` |
+| 파일명 | `{w,b}{K,Q,R,B,N,P}.png` (예: `wK.png`, `bN.png`) |
+| 셀 안 배치 | 32×32 중앙 정렬, 상하 여백은 글리프 무게중심에 맞춰 자율 (현재 placeholder는 하단 절반에 무게 집중 — 보드 위 "서 있는" 느낌) |
+| 알파 | 글리프 외곽은 완전 투명, 외곽선/채움은 단색 (반투명 metaphor 금지) |
+| 애니메이션 | **현 MVP는 정적 1프레임만 사용**. Tween은 Phaser가 sprite 자체를 이동/페이드로 처리. 정식 자산에서 Idle/Move/Capture 추가 프레임 도입 시 별도 sprite-sheet 발주 (스펙 후속 사이클) |
+
+#### 캐릭터별 백 진영 팔레트
+
+| characterId | wFill (채움) | wOutline (외곽선) | 특징 |
+|---|---|---|---|
+| `standard` | `#f5e9d3` | `#2a2017` | 옅은 아이보리 / 다크 브라운 |
+| `assassins` | `#a8a8b8` | `#1a1a22` | 은회색 / 블랙 — 어두운 톤 |
+| `saints` | `#f5d97c` | `#7a5511` | 금색 / 어두운 황금 — 신성한 톤 |
+
+#### 흑 진영 공통 (모든 캐릭터 동일)
+
+| 항목 | 값 |
+|---|---|
+| bFill | `#2f231a` 짙은 우드 |
+| bOutline | `#7a5a40` mid 브라운 |
+
+> **2색 제약**: 현재 placeholder는 채움 1색 + 외곽선 1색의 **2색 글리프**다. 정식 자산은 같은 32×32 안에서 색 수를 3~5색까지 확장 가능 (하이라이트·그림자 추가). 단, 캐릭터 식별성을 위해 베이스 톤(아이보리/은회색/금색)은 유지.
+
+### 11.3 보드 (3 테마)
+
+| 항목 | 값 |
+|---|---|
+| 1셀 사이즈 | 56×56 px (BoardScene `TILE` 상수) |
+| 보드 전체 | 448×448 px (8×TILE), MARGIN 24px 양옆 |
+| 표시 방식 | 단색 rectangle (텍스처 아님 — 정식 아트 도입 시 sprite로 교체) |
+
+| theme | LIGHT 칸 | DARK 칸 | 적용 |
+|---|---|---|---|
+| `default` | `#f0d9b5` | `#b58863` | 클래식 + 모험 1막 |
+| `forest` | `#d4e09b` | `#5b8a3a` | 모험 2막 |
+| `ocean` | `#cce6e8` | `#3e7a8b` | 모험 3막 |
+
+추후 보드 텍스처(나무결/대리석/풀 등)를 도입할 경우, **타일 단위 256×256 px** (4×스케일) 무손실 PNG로 발주 — Phaser가 자동 다운스케일.
+
+### 11.4 보드 오버레이 마커 (런타임 색 — 자산 불요)
+
+마커는 모두 코드에서 알파 블렌딩 rectangle/circle로 그리지만, 정식 아트 디자인 시 톤 매칭에 참고:
+
+| 마커 | hex | alpha | 용도 |
+|---|---|---|---|
+| `HIGHLIGHT` | `#6dd47e` | 0.7 (도트) | 합법 수 표시 |
+| `SELECTED` | `#ffd23f` | 0.5 | 선택된 칸 |
+| `LAST_MOVE` | `#f4a261` | 0.35 | 마지막 무브 from/to |
+| `CHECK` | `#ff5050` | 0.4 | 체크당한 킹 칸 |
+| `HINT` | `#4dabf7` | 0.8 (스트로크) | 힌트 from/to 링 |
+
+### 11.5 노드 아이콘 (6종 × 4 상태)
+
+`AdventureMap.tsx`가 현재 이모지(`⚔☠💰❓🏕👑`)로 표시 — 정식 자산이 PNG로 대체.
+
+| 항목 | 값 |
+|---|---|
+| 캔버스 사이즈 | **48×48 px** (지표 표시용. 코너에 ✓ 등 상태 배지가 들어가도 여유) |
+| 디렉토리 (제안) | `client/public/assets/adventure/map-icons/{nodeType}.png` |
+| nodeType | `battle` / `elite` / `shop` / `event` / `rest` / `boss` |
+| 상태 변형 | 한 PNG에 모두 X — 코드에서 alpha/border로 상태 표시. 자산은 **베이스 1장 + (optional) 잠금 X 표시 1장**만 |
+| 배경 | 투명 |
+| 외곽 톤 | UI 보더(#475569 slate-700, #a78bfa purple-400)와 색 충돌 피하기 — 너무 진한 단색보다 미드톤 권장 |
+
+### 11.6 보스 스프라이트 (3종)
+
+| 항목 | 값 |
+|---|---|
+| 캔버스 사이즈 | **96×96 px** (보스 화면 헤더 + 인터스티셜에서 표시) |
+| 디렉토리 | `client/public/assets/adventure/bosses/act{1,2,3}.png` |
+| 막별 톤 | 1막 숲 → 자연/거대 동물 / 2막 던전 → 골렘·언데드 / 3막 하늘성 → 신성·기계 |
+| 애니메이션 | 정식 사이클에서 Idle 4프레임 + Defeat 4프레임 sprite-sheet (96×96 frames × 8). 본 사이클은 **Idle 1프레임만** 우선 발주 |
+| 배경 | 투명 |
+
+### 11.7 캐릭터 초상화 (3종 + 미해금 슬롯)
+
+`AdventureEntry`의 캐릭터 선택 카드에 표시.
+
+| 항목 | 값 |
+|---|---|
+| 캔버스 사이즈 | **96×96 px** (Retina 대비 가능하면 ×2 = 192×192 옵션) |
+| 디렉토리 | `client/public/assets/adventure/characters/{characterId}.png` |
+| characterId | `standard` / `assassins` / `saints` (현재 풀 3종) + 미해금 자리에 `locked.png` 1장 |
+| 배경 | 투명 또는 캐릭터 톤 원형 후광 (디자이너 재량) |
+| 톤 매칭 | 각 캐릭터의 기물 wFill(11.2 표) 톤을 강조 — 한눈에 같은 진영임을 인식 |
+
+### 11.8 아이템 아이콘 (현재 풀 23종)
+
+| 등급 | 개수 (현 풀) | 권장 톤 |
+|---|---|---|
+| Common | 10 | 회색 ~ 베이지 (`#9ca3af` ~ `#d4c5a0`) |
+| Uncommon | 5 | 초록 (`#4ade80` ~ `#22c55e`) |
+| Rare | 10 | 파랑 ~ 사이안 (`#60a5fa` ~ `#22d3ee`) |
+| Legendary | 5 (실 5종) | 자주·금색 (`#c084fc` + `#fbbf24` 빛 효과) |
+
+| 항목 | 값 |
+|---|---|
+| 캔버스 사이즈 | **32×32 px** (인벤토리/상점 카드 안) |
+| 디렉토리 | `client/public/assets/adventure/items/{itemId}.png` |
+| itemId | `client/src/lib/adventure/data/items.ts`의 `id` 그대로 (예: `iron-shield.png`, `crown-of-eternity.png`) |
+| 배경 | 투명 |
+| 등급 프레임 | 자산 안에 그리지 말 것 — 코드의 `.rarity-*` CSS가 카드 보더로 처리 |
+
+#### 현재 풀 itemId 전수 (참고 — 실제 발주는 items.ts 최신본 기준)
+
+`iron-shield`, `sharp-blade`, `leather-armor`, `healing-herb`, `spike-helm`, `oak-staff`, `sturdy-cloak`, `training-band`, `fang-amulet`, `minor-potion` (Common 10)
+`knight-spurs`, `royal-crown`, `phoenix-feather`, `thorn-mantle`, `titan-belt` (Uncommon 5)
+`demon-edge`, `aegis-plate`, `ironbark-amulet`, `storm-glaive`, `warden-mantle`, `runic-gauntlet`, `serpent-fang`, `oathkeeper-shield`, `phantom-cloak`, `dragon-scale` (Rare 10)
+`crown-of-eternity`, `soul-of-titan`, `worldtree-bough`, `sunforged-blade`, `eclipse-aegis` (Legendary 5)
+
+### 11.9 배경 (막별 3종)
+
+| 항목 | 값 |
+|---|---|
+| 사이즈 | **1920×1080 px** (16:9 데스크톱), 모바일은 CSS `object-fit: cover` |
+| 디렉토리 | `client/public/assets/adventure/backgrounds/act{1,2,3}.png` |
+| 톤 | 1막 숲 (녹/갈) / 2막 던전 (석/암회) / 3막 하늘성 (청/금) |
+| 레이어 분리 (옵션) | 전경/중경/원경 PNG 3장 (parallax용). 미적용 시 단일 PNG |
+| 압축 | PNG 무손실 우선. 용량 부담 시 WebP 대체 (Phaser 6.0+ 지원) |
+
+### 11.10 BGM (5트랙)
+
+| 항목 | 값 |
+|---|---|
+| 포맷 | OGG Vorbis (1순위) + MP3 (Safari iOS 폴백) |
+| 비트레이트 | OGG q=5 (~160kbps) / MP3 192kbps |
+| 채널 | 스테레오 |
+| 샘플레이트 | 44.1 kHz |
+| 루프 | seamless loop 가능하도록 fade-in/out 없이 정확한 마디 단위 종결 |
+| 디렉토리 | `client/public/assets/bgm/{key}.ogg` (+`.mp3`) |
+
+| key | 권장 길이 (loop) | 분위기 |
+|---|---|---|
+| `menu` | 60~90초 | 잔잔한 chiptune, 메인메뉴 대기 |
+| `classic` | 90~120초 | 평온한 대국, 집중 방해 X |
+| `adventure-act1` | 60~90초 | 숲의 모험 — 밝고 가벼움 |
+| `adventure-act2` | 60~90초 | 던전 — 무게감, 긴장 |
+| `adventure-act3` | 90~120초 | 하늘성 — 웅장, 신성 |
+| `boss` | 60~90초 | 위협적, 드라마틱 (모든 막 보스 공통 또는 막별 변형) |
+| `result-victory` / `result-defeat` | 20~30초 (one-shot, no loop) | 승리/패배 임팩트 |
+
+> **AudioManager 호출 매핑**: `audioManager.playBgm('menu' | 'classic' | 'adventure' | 'boss' | 'result')` 키 기준. 정식 도입 시 `playBgm`은 Howler.js 또는 `<audio>` 태그로 교체되며, 위 키를 그대로 사용.
+
+### 11.11 SFX
+
+| 항목 | 값 |
+|---|---|
+| 포맷 | WAV (편집 원본) + OGG (배포본). Phaser는 둘 다 지원 |
+| 채널 | 모노 (위치감 불요 — UI/보드 SFX 모두) |
+| 샘플레이트 | 44.1 kHz |
+| 비트심도 | WAV 16-bit |
+| 디렉토리 | `client/public/assets/sfx/{category}/{key}.ogg` |
+| volume 정규화 | -3 dBFS 피크 권장 (코드의 SFX gain 0.3~0.4와 합성해 클리핑 회피) |
+
+#### 길이 권장치 — 현재 AudioManager placeholder 동작과 매칭
+
+| key | 카테고리 | 길이 (ms) | 톤 가이드 |
+|---|---|---|---|
+| `click` | global | **80~100** | 짧은 사인파 880Hz 풍 — 메뉴/버튼 |
+| `move` | classic | **100~150** | 폰 무브 — 나무 딸깍 또는 부드러운 trigangle wave 440→220Hz |
+| `capture` | classic | **150~250** | 단단한 타격 — sawtooth 180→90Hz, 약간의 노이즈 leyer |
+| `check` | classic | 200~300 | 경고 톤 — high pitch (1.2kHz~) 짧게 |
+| `checkmate` | classic | 400~600 | 게임 종료 강조 — 하강 모티프 3음 |
+| `castle` | classic | 150~200 | 룩 동시 이동 — `move` + 메탈릭 추가 |
+| `promotion` | classic | 300~400 | 승급 fanfare — 상승 모티프 |
+| `item-pickup` | adventure | 200~300 | 반짝 (high frequency sparkle, 0.5~1초 reverb tail 허용) |
+| `node-enter` | adventure | 150~250 | 진입 swoosh |
+| `boss-appear` | adventure | 800~1200 | 드라마틱 (intro stinger, BGM 위에 겹쳐도 무해) |
+| `hp-damage` | adventure | 100~200 | 둔탁 — low frequency thump |
+| `character-defeat` | adventure | 600~1000 | 게임오버 — sad motif |
+| `star-shard` | adventure | 200~400 | 반짝 high (item-pickup 보다 더 청량) |
+
+> **호출 매핑**: 현재 `AudioManager`는 `playClick / playMove / playCapture`만 정식 메서드. 정식 SFX 도입 시 각 메서드 안에서 사인파 생성을 `new Audio(...)` 또는 Howler `sound.play()`로 교체. 추가 SFX(check/checkmate/item-pickup 등)는 메서드를 추가하고 호출처(`AdventureChessManager.tryMove` 후, `AdventureBattle.finalize`, `AdventureResult.onMount` 등)에 hook을 끼움.
+
+### 11.12 검수 체크리스트 (디자이너용)
+
+발주 전·완성품 인수 시 양측 다음을 확인:
+
+- [ ] 모든 PNG 캔버스 사이즈가 본 §11 표와 정확히 일치 (32×32 / 48×48 / 96×96 / 1920×1080)
+- [ ] 배경 alpha=0 (반투명 흰색 픽셀 없음)
+- [ ] 안티앨리어싱 부재 — 외곽선 단색
+- [ ] 캐릭터 식별성 — 기물 sprite의 wFill 톤이 §11.2 캐릭터별 색에 가까운 톤
+- [ ] 아이템 itemId가 [items.ts](../client/src/lib/adventure/data/items.ts)의 id와 정확히 일치 (오타 시 런타임 로드 실패)
+- [ ] BGM는 loop 시 끊김 없음 (waveform editor에서 양 끝점 검수)
+- [ ] SFX 피크 -3 dBFS 이하, 클리핑 없음
+- [ ] 파일명 소문자 + 케밥 케이스
+- [ ] OGG는 q=5 또는 192kbps 이상, MP3 폴백 동봉
+
+### 11.13 색 톤 일관성 가이드
+
+UI 코드의 Tailwind 팔레트(slate/amber/emerald/purple)와 충돌하지 않도록:
+
+- **slate-700 ~ slate-900** (`#334155` ~ `#0f172a`) — 카드/모달 보더·배경. 자산 외곽선이 이 톤과 너무 비슷하면 보이지 않음
+- **amber-300/400** (`#fcd34d` / `#fbbf24`) — 별의 조각, 현재 노드 강조. saints 캐릭터 톤과 일부 겹침 — 의도된 친근감
+- **emerald-400** (`#34d399`) — 도전과제 잠금해제. Uncommon 등급 톤과 일치
+- **purple-400/500** (`#a78bfa` / `#8b5cf6`) — 다음 진입 가능 노드. Legendary 등급 톤과 일치
+- **red-400/500** (`#f87171` / `#ef4444`) — HP 위험, 패배. CHECK 마커 톤
+
