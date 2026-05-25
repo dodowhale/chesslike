@@ -20,9 +20,11 @@ export const ITEM_POOL: Item[] = [
 
   // ---------- Uncommon (5) ----------
   // NOTE: 원안은 "나이트 점프 거리 +1"(jumpOver/range modifier)이었으나 chess.js 룰
-  //   확장이 필요해 본 사이클(M6+)에서는 직관적 stat boost로 임시 교체. 정식
-  //   확장은 후속 사이클 (TODO.md "코드 — Phaser 보드 인터랙션 강화" 항목).
-  { id: 'knight-spurs', name: '기사의 박차', rarity: 'uncommon', category: 'stat', description: '장착 기물 HP +15, 공격력 +5', modifier: { hp: 15, attack: 5 } },
+  //   확장이 필요해 본 사이클에서는 박차 메타포(돌격 + 자기 방어)를 살린 복합
+  //   modifier로 재설계. uncommon 등급 안에서 royal-crown(hp20/atk5)·
+  //   phoenix-feather(heal5)·thorn-mantle(thorns5)·titan-belt(hp15/atk3) 사이의
+  //   차별 포지션: stat + 반사 작은 양을 동시에 주는 균형형.
+  { id: 'knight-spurs', name: '기사의 박차', rarity: 'uncommon', category: 'effect', description: 'HP +15, 공격력 +5, 피격 시 반사 +3', modifier: { hp: 15, attack: 5, thornsDamage: 3 } },
   { id: 'royal-crown', name: '왕관', rarity: 'uncommon', category: 'stat', description: 'HP +20, 공격력 +5', modifier: { hp: 20, attack: 5 } },
   { id: 'phoenix-feather', name: '불사조 깃털', rarity: 'uncommon', category: 'effect', description: '턴마다 HP +5', modifier: { healPerTurn: 5 } },
   { id: 'thorn-mantle', name: '가시 망토', rarity: 'uncommon', category: 'effect', description: '피격 시 반사 +5', modifier: { thornsDamage: 5 } },
