@@ -1,6 +1,7 @@
 import { createEffect, createMemo, createSignal, onCleanup, onMount, Show } from 'solid-js';
 import { useNavigate } from '@solidjs/router';
 import { Button } from '@/components/ui/Button';
+import { Modal } from '@/components/ui/Modal';
 import { GameContainer } from '@/components/phaser/GameContainer';
 import { activeRun } from '@/store/adventureStore';
 import {
@@ -25,6 +26,7 @@ export default function AdventureBattle() {
   const [boardSelected, setBoardSelected] = createSignal<Square | undefined>();
   const [highlights, setHighlights] = createSignal<Square[]>([]);
   const [outcome, setOutcome] = createSignal<'victory' | 'defeat' | null>(null);
+  const [abandonOpen, setAbandonOpen] = createSignal(false);
 
   const run = () => gameStore.adventure;
   const currentNode = createMemo(() => {
@@ -122,6 +124,21 @@ export default function AdventureBattle() {
     }
   }
 
+  function onBackButton() {
+    if (outcome() !== null) {
+      returnToMap();
+      return;
+    }
+    setAbandonOpen(true);
+  }
+
+  function confirmAbandon() {
+    setAbandonOpen(false);
+    // onCleanup이 leaveBoardNode + setAdventureClickHandler(null) 처리.
+    // 노드는 미완료 상태 유지 — 다시 진입 시 보드는 초기 진형으로 재시작.
+    navigate('/adventure/run/map');
+  }
+
   // 헤더의 킹 HP는 store 보드 hp 채널에서 직접 가져와 stale 방지
   const playerKingHp = () => {
     const hps = gameStore.ui.adventurePieceHps;
@@ -137,8 +154,8 @@ export default function AdventureBattle() {
   return (
     <div class="min-h-screen flex flex-col">
       <header class="flex items-center justify-between px-4 py-3 border-b border-slate-800">
-        <Button variant="ghost" onClick={returnToMap} disabled={outcome() === null}>
-          ← {outcome() === null ? '진행 중' : '맵으로'}
+        <Button variant="ghost" onClick={onBackButton}>
+          ← {outcome() === null ? '전투 포기' : '맵으로'}
         </Button>
         <span class="font-semibold">
           {currentNode()?.type === 'elite' ? '⚔ 엘리트' : '⚔ 전투'}
@@ -166,6 +183,21 @@ export default function AdventureBattle() {
           </Button>
         </Show>
       </main>
+      <Modal
+        open={abandonOpen()}
+        onClose={() => setAbandonOpen(false)}
+        title="전투를 포기하시겠습니까?"
+      >
+        <p class="text-sm text-slate-300 mb-4">
+          진행 중인 보드는 초기화됩니다. 노드는 미완료 상태로 남아 맵에서 다시 진입할 수 있습니다.
+        </p>
+        <div class="flex justify-end gap-2">
+          <Button variant="secondary" onClick={() => setAbandonOpen(false)}>
+            계속하기
+          </Button>
+          <Button onClick={confirmAbandon}>전투 포기</Button>
+        </div>
+      </Modal>
     </div>
   );
 }

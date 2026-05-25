@@ -1,6 +1,7 @@
 import { createEffect, createMemo, createSignal, onCleanup, onMount, Show } from 'solid-js';
 import { useNavigate } from '@solidjs/router';
 import { Button } from '@/components/ui/Button';
+import { Modal } from '@/components/ui/Modal';
 import { GameContainer } from '@/components/phaser/GameContainer';
 import { activeRun } from '@/store/adventureStore';
 import {
@@ -25,6 +26,7 @@ export default function AdventureBoss() {
   const [highlights, setHighlights] = createSignal<Square[]>([]);
   const [phaseIdx, setPhaseIdx] = createSignal(0);
   const [outcome, setOutcome] = createSignal<'victory' | 'defeat' | null>(null);
+  const [abandonOpen, setAbandonOpen] = createSignal(false);
   const PHASE_COUNT = 2;
 
   const run = () => gameStore.adventure;
@@ -130,18 +132,29 @@ export default function AdventureBoss() {
     }
   }
 
+  function onBackButton() {
+    if (outcome() !== null) {
+      returnToMap();
+      return;
+    }
+    setAbandonOpen(true);
+  }
+
+  function confirmAbandon() {
+    setAbandonOpen(false);
+    // onCleanup이 leaveBoardNode 처리. 보스 노드는 미완료 상태로 남아 다시 진입
+    // 시 페이즈 0부터 새 보드. 진행 중인 페이즈 상태(HP/페이즈 인덱스)는 손실.
+    navigate('/adventure/run/map');
+  }
+
   const playerKingHp = () =>
     run()?.pieces.find((p) => p.side === 'w' && p.type === 'k')?.hp ?? 0;
 
   return (
     <div class="min-h-screen flex flex-col">
       <header class="flex items-center justify-between px-4 py-3 border-b border-slate-800">
-        <Button
-          variant="ghost"
-          onClick={returnToMap}
-          disabled={outcome() === null}
-        >
-          ← {outcome() === null ? '진행 중' : '맵으로'}
+        <Button variant="ghost" onClick={onBackButton}>
+          ← {outcome() === null ? '보스전 포기' : '맵으로'}
         </Button>
         <span class="font-semibold">
           👑 보스 — 페이즈 {phaseIdx() + 1} / {PHASE_COUNT}
@@ -169,6 +182,21 @@ export default function AdventureBoss() {
           </Button>
         </Show>
       </main>
+      <Modal
+        open={abandonOpen()}
+        onClose={() => setAbandonOpen(false)}
+        title="보스전을 포기하시겠습니까?"
+      >
+        <p class="text-sm text-slate-300 mb-4">
+          진행 중인 페이즈는 초기화됩니다. 보스 노드는 미완료 상태로 남아 맵에서 다시 진입할 수 있습니다.
+        </p>
+        <div class="flex justify-end gap-2">
+          <Button variant="secondary" onClick={() => setAbandonOpen(false)}>
+            계속하기
+          </Button>
+          <Button onClick={confirmAbandon}>보스전 포기</Button>
+        </div>
+      </Modal>
     </div>
   );
 }

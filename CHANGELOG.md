@@ -24,6 +24,9 @@
 
 ### Fixed
 - 모험 모드 캡처 실패(damaged) 시 chess.js active color가 swap되지 않아 후속 차례 흐름이 멈추던 버그. `ChessManager.swapTurnOnly()` 추가하고 `AdventureChessManager.tryMove`의 damaged 분기에서 호출하도록 수정 (FEN active color swap + en-passant target 무효화 + halfmove +1, 흑→백 시 fullmove +1).
+- 모험 Battle/Boss 화면의 좌상단 ← 버튼이 outcome 결정 전까지 disabled 상태라 사용자가 전투를 떠날 수 없던 문제. 버튼을 항상 활성화하고, 진행 중에는 "전투 포기" 확인 모달을 표시 후 맵으로 이동 (노드는 미완료로 남아 재진입 가능, 보드는 초기 진형으로 재시작). 보스도 동일 패턴.
+- 전투 포기 후 맵에서 다음 스테이지 노드가 잘못 진입 가능해지던 버그. 원인: `AdventureRunController.availableNextNodes`가 currentNode의 isCompleted를 보지 않고 nextNodes를 그대로 반환했고, `advanceTo`가 진입 시점에 이전 노드를 자동으로 isCompleted=true 마킹해 markCurrentNodeCompleted 호출 없이도 다음이 열렸음. 수정: `availableNextNodes`는 currentNode.isCompleted=true일 때만 next 반환, `advanceTo`의 자동 마킹 제거 (실제 클리어 마킹은 markCurrentNodeCompleted가 단독 책임).
+- 보스 king HP=0 직후 게임이 정지하던 버그. 원인: `AdventureChessManager.tryMove`가 king을 일반 capture 분기로 처리해 HP 0 이하 시 `chess.tryMove`로 실제 캡처를 시도했으나 chess.js가 king 캡처를 합법수로 인정하지 않아 무브가 fail → `attemptBoardMove`가 syncBoard/scheduleAiReply 없이 종료 → AI 응답 안 옴. 수정: `defender.type==='k'`이면 항상 damaged 분기 + HP 0 clamp + `swapTurnOnly`로 차례만 넘김. SPEC §4.2 "보스 KingHp=0은 약화의 자리표, 페이즈 종료는 체크메이트만"을 정확히 반영. 일반 노드 적 king은 `checkBoardEndCondition`의 `blackKingHp<=0` 분기로 즉시 종료됨.
 
 ### Notes
 - 본 사이클은 외부 자산(스프라이트/BGM/SFX), 서버 인프라(SQLite/leaderboard/인증), 새 캐릭터(요새단/혼돈단), 테스트 자동화, 드래그·드롭 입력은 제외. 별도 사이클에서 후속.

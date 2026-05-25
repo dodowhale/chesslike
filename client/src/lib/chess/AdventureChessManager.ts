@@ -190,12 +190,18 @@ export function createAdventureChessManager(opts: AdventureChessManagerOptions) 
     // 3. 데미지 계산
     const damage = effectiveAttack(attacker, globalMods);
     const remainingHp = defender.hp - damage;
+    // SPEC §4.2: 킹은 보드에서 캡처되지 않는다 (chess.js도 king 캡처를 합법수로
+    // 인정하지 않음). HP만 차감하고 attacker는 원위치. 일반 노드는 KingHp<=0이
+    // checkBoardEndCondition에서 즉시 종료로 이어지고, 보스 노드는 KingHp<=0이
+    // 종료 자리표가 아니므로 그대로 진행해 체크메이트로만 페이즈가 끝난다.
+    const defenderIsKing = defender.type === 'k';
 
-    if (remainingHp > 0) {
-      // 4a. 캡처 실패 — defender HP만 감소, attacker 원위치 (체스 무브 적용 안 함)
+    if (defenderIsKing || remainingHp > 0) {
+      // 4a. 캡처 실패(또는 king) — defender HP만 감소, attacker 원위치.
       // chess.js 무브를 적용하지 않으므로 active color가 그대로 남아 후속 차례가
       // 멈춘다. swapTurnOnly로 차례만 넘긴다 (SPEC §5.1 "공격 시도 = 한 턴 소비").
-      defender.hp = remainingHp;
+      const clampedRemaining = Math.max(0, remainingHp);
+      defender.hp = clampedRemaining;
       chess.swapTurnOnly();
       return {
         ok: true,
@@ -204,7 +210,7 @@ export function createAdventureChessManager(opts: AdventureChessManagerOptions) 
           attackerId: attacker.id,
           defenderId: defender.id,
           damage,
-          defenderRemainingHp: remainingHp,
+          defenderRemainingHp: clampedRemaining,
           revert: true,
         },
         fen: chess.getFen(),

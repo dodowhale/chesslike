@@ -135,21 +135,30 @@ export class AdventureRunController implements SceneController {
     return this.run.map.find((n) => n.id === this.run.currentNodeId);
   }
 
-  /** 진입 가능한 다음 노드 ID 목록 (현재 노드의 nextNodes). */
+  /**
+   * 진입 가능한 다음 노드 ID 목록.
+   * 현재 노드가 클리어되지 않았다면(전투 포기 등) 빈 배열 — 사용자는 현재 노드를
+   * 재진입해서 다시 시도해야 한다. markCurrentNodeCompleted가 호출돼야만 다음으로
+   * 진행 가능.
+   */
   availableNextNodes(): string[] {
     const cur = this.currentNode();
     if (!cur) return [];
+    if (!cur.isCompleted) return [];
     return cur.nextNodes;
   }
 
-  /** 노드 클리어 표시 + 다음 노드로 이동. nextId가 nextNodes 안에 있어야 함. */
+  /**
+   * 노드로 이동. nextId가 nextNodes 안에 있어야 한다.
+   * 노드 클리어 마킹은 markCurrentNodeCompleted가 책임지므로 여기서는 currentNodeId만
+   * 갱신한다. (전투 포기 시 자동 마킹되면 다음 진입이 부당하게 열려버리는 버그 방지)
+   */
   advanceTo(nextId: string): void {
     const cur = this.currentNode();
     if (!cur) return;
     if (!cur.nextNodes.includes(nextId)) return;
     this.run = {
       ...this.run,
-      map: this.run.map.map((n) => (n.id === cur.id ? { ...n, isCompleted: true } : n)),
       currentNodeId: nextId,
     };
     this.commit();
