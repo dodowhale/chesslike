@@ -12,7 +12,10 @@
 | **M3** 모험 모드 MVP | ✅ 완료 | `a944da2`, `ebb64b7` |
 | **M4** 메타 진행 + 콘텐츠 | ✅ 완료 (요새단/혼돈단은 선택 사항으로 보류) | `a944da2` |
 | **M5** 폴리시 | ✅ 완료 (외부 자산 의존 항목은 M6+ 후속) | `ebb64b7` |
-| **M6+** 후속 — 외부 자산·확장 | ⏳ 별도 섹션 | — |
+| **M6+ 비주얼·인터랙션 1차** | ✅ 완료 | `9225671` |
+| **M6+ 콘텐츠·UI·UX 패키지** | ✅ 완료 | `5fec7e5` |
+| **M6+ 모험 흐름 버그 수정** (damaged turn / 전투 포기 모달 / 노드 진입 가드) | ✅ 완료 | `bd9414d` + 미커밋 |
+| **M6+** 후속 — 외부 자산·확장·인프라 | ⏳ 별도 섹션 | — |
 
 ## M0: 공통 기반 (Foundation) ✅
 
@@ -152,6 +155,8 @@
 - [ ] 드래그·드롭 입력 (클릭/탭과 공존, 합법수 미리보기)
 - [x] HP 바 변화 애니메이션 (데미지 받을 때 시각 피드백)
 - [ ] 보스 페이즈 시각 인터스티셜 (페이즈 클리어 → 다음 페이즈 진입 사이 효과)
+- [x] 모험 damaged 후 turn swap — `ChessManager.swapTurnOnly()` 도입 + `AdventureChessManager.tryMove` damaged 분기에서 호출. 캡처 실패 후 chess.js active color가 안 바뀌어 게임이 정지하던 버그 수정.
+- [x] 보스 king 공격 시 chess.js가 e8을 합법수로 제공해 capture 분기 진입 → king 캡처 합법 무브 인정 안 됨 → stuck 버그. `AdventureChessManager.tryMove`에서 `defender.type==='k'`이면 항상 damaged 처리 + HP 0 clamp. SPEC §4.2 "보스 KingHp=0은 약화의 자리표, 페이즈 종료는 체크메이트만" 정확 반영.
 
 ### 코드 — AI 강화
 - [ ] 보스 전용 강한 AI (Stockfish 또는 페이즈별 사전 정의 무브 시퀀스)
@@ -185,10 +190,13 @@
 
 ### 코드 — 모험 UX 보강
 - [x] 모험 결과 화면에 막별 통계 (1/2/3막별 완료 노드 + 신규 잠금해제 도전과제 표시)
+- [x] 전투/보스전 진행 중 포기 가능 — Battle/Boss 화면 ← 버튼 활성화 + 확인 모달 (`AdventureBattle.tsx` / `AdventureBoss.tsx`). 노드는 미완료로 남아 재진입 시 보드 초기 진형으로 재시작.
+- [x] 모험 노드 진입 가드 — `availableNextNodes`는 currentNode.isCompleted=true일 때만 next 반환 + `advanceTo` 자동 마킹 제거. 전투 포기 시 다음 스테이지 부당 해제 차단.
 - [ ] 인벤토리 키보드 단축키
 - [ ] 보드 좌측에 행동 로그 패널 (모험 전투에서 데미지/캡처 시각화)
 - [ ] 모바일 보드 줌·드래그 (작은 화면에서 기물 클릭 어려움)
 - [x] 보드 클릭 영역 확대 (BoardScene 단일 zone + HIT_PAD 12px, 모서리 셀로 외곽 클릭 흡수)
+- [ ] 전투 포기 시 진행 중 보드 스냅샷 보존 (현재는 재진입 시 초기 진형으로 재시작 — 의도된 UX이나 "잠시 다른 노드 보고 돌아오기" 시나리오에선 손실)
 
 ### 문서 / DX
 - [ ] 이벤트/아이템/캐릭터 다국어 (현재 한국어 고정 텍스트) — 신규 UI 키 ko/en만 반영, 이벤트/아이템/캐릭터 본문 다국어는 미정
@@ -206,3 +214,4 @@
   - 픽셀 도트 글리프 — [`docs/superpowers/specs/2026-05-24-chess-piece-visuals-design.md`](./superpowers/specs/2026-05-24-chess-piece-visuals-design.md) *(gitignore)*
   - 보드 테마 + 캐릭터 스킨 — [`docs/superpowers/specs/2026-05-25-theme-character-skin-design.md`](./superpowers/specs/2026-05-25-theme-character-skin-design.md) *(gitignore)*
   - 다이얼로그 PNG 통일 — [`docs/superpowers/specs/2026-05-25-cycle-b-dialog-icons-design.md`](./superpowers/specs/2026-05-25-cycle-b-dialog-icons-design.md) *(gitignore)*
+- M6+ 콘텐츠·UI·UX 패키지(완료)의 디자인 스펙: [`docs/superpowers/specs/2026-05-25-m6-content-ux-package-design.md`](./superpowers/specs/2026-05-25-m6-content-ux-package-design.md) *(gitignore)*

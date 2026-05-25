@@ -26,6 +26,8 @@
 | M4 메타 진행 + 추가 콘텐츠 | ✅ 완료 |
 | M5 폴리시 | ✅ 완료 (외부 자산은 M6+) |
 | M6+ 비주얼·인터랙션 1차 | ✅ Sprite identity·Tween / 픽셀 도트 글리프 / 보드 테마 / 캐릭터 스킨 / 다이얼로그 PNG 통일 |
+| M6+ 콘텐츠·UI·UX 패키지 | ✅ 이벤트 풀 6→15 · 아이템 Rare/Legendary 확장 · 도전과제 5→15 · `/stats` `/help` 신규 · 모험 결과 막별 통계 · 보드 클릭 영역 확대 · `RunStats` 영구 통계 · CHANGELOG.md · `__chesslike` 정식화 |
+| M6+ 모험 흐름 버그 수정 | ✅ damaged 후 turn swap (`swapTurnOnly`) · 전투/보스전 진행 중 포기 모달 · `availableNextNodes`/`advanceTo` 가드 |
 | M6+ 후속 (외부 자산·콘텐츠·인프라) | ⏳ TODO에 별도 섹션 |
 
 자세한 진행 항목과 M6+ 후속 작업은 [docs/TODO.md](./docs/TODO.md) 참조.
@@ -120,15 +122,24 @@ bun run gen:placeholders
 
 ## 🧪 dev 편의
 
-개발 모드에서 `window.__chesslike`로 store/eventBus에 접근 가능:
+개발 모드에서 `window.__chesslike`로 store/eventBus/모험 헬퍼·통계에 접근 가능 (정의: [`client/src/lib/devApi.ts`](./client/src/lib/devApi.ts)):
 
 ```js
+// 기본 핸들
 __chesslike.game.gameStore           // 게임 상태 (board, turn, ui, adventure)
 __chesslike.game.handleSquareClick   // 클래식 보드 클릭 시뮬레이션
 __chesslike.bus                      // eventBus 인스턴스
+
+// 모험 모드 헬퍼
+__chesslike.adventure.current()                       // 활성 AdventureRunController
+__chesslike.adventure.giveItem('crown-of-eternity')   // 인벤토리에 강제 추가
+__chesslike.adventure.addGold(100)
+
+// 누적 통계
+await __chesslike.stats.load()
 ```
 
-production 빌드에서는 자동 제거됩니다.
+production 빌드는 본 모듈을 import하지 않아 자동 tree-shake 됩니다.
 
 ## 🛣 M6+ 진행 상황
 
@@ -141,11 +152,25 @@ production 빌드에서는 자동 제거됩니다.
 - **캐릭터별 기물 스킨** — `standard`(아이보리) / `assassins`(은회색) / `saints`(금색) 백 진영 팔레트. 흑은 공통 baseline. 36 PNG `client/public/assets/pieces/{characterId}/{w,b}{K..P}.png`.
 - **다이얼로그 PNG 통일** — `PromotionDialog`(4 선택지) / `GameOverDialog`(승자 K) Unicode 글리프 → generator PNG `<img>`. 활성 캐릭터·진영 색 자동 적용.
 
+**완료 (M6+ 콘텐츠·UI·UX 패키지)**:
+- **콘텐츠 확장** — 이벤트 풀 6→15, 아이템 Rare 5→10 + Legendary 2→5, 도전과제 5→15 (act2/act3-clear, saints-clear, gold-hoarder, flawless-act1, event-explorer, shop-spender, boss-slayer, rare-trio, legend-trio)
+- **UI** — `/stats` 통계 화면(총 런/승률/보스 클리어/누적 골드/막별 보스) + HeaderBar 📊 활성화, `/help` 도움말 화면 + HeaderBar ❓ 신규
+- **UX** — 모험 결과 화면 막별 통계 + 신규 잠금해제 도전과제 카드, BoardScene 클릭 영역 외곽 `HIT_PAD 12px` 확장 (모바일 친화)
+- **영구 통계** — `RunStats` (`meta:runStats` kv) + `recordRunEnd` 자동 기록
+- **DX** — `CHANGELOG.md` 도입(Keep-a-Changelog), `__chesslike` 정식 모듈화
+
+**완료 (M6+ 모험 흐름 버그 수정)**:
+- **damaged 후 turn swap** — `ChessManager.swapTurnOnly()` 추가, `AdventureChessManager.tryMove` damaged 분기에서 호출. 캡처 실패 후 chess.js active color가 안 바뀌어 게임이 정지하던 버그 해결.
+- **전투/보스전 진행 중 포기** — Battle/Boss ← 버튼 활성화 + 확인 모달. 노드는 미완료로 남아 재진입 시 보드 초기 진형으로 재시작.
+- **노드 진입 가드** — `availableNextNodes`는 currentNode.isCompleted=true일 때만 next 반환, `advanceTo` 자동 마킹 제거. 전투 포기 후 다음 스테이지 부당 해제 차단.
+
 **잔여 (외부 자산·콘텐츠·인프라 위주)**:
 - **외부 자산** — 정식 도트 에셋(노드 아이콘·보스 스프라이트·캐릭터 초상화·아이템 17종), BGM 5트랙, SFX 패키지
 - **Phaser 보드 강화** — 드래그·드롭 입력, 보스 페이즈 시각 인터스티셜, HeaderBar/AdventureEntry/MainMenu 장식 아이콘 통일
 - **AI 강화** — 보스 전용 강한 AI, 일반 모험 AI를 random에서 약한 Stockfish로
-- **콘텐츠 확장** — 요새단/혼돈단 캐릭터, 도전과제 5→20종, 통계 화면, 이벤트/아이템 풀 확장
+- **콘텐츠 확장** — 요새단/혼돈단 캐릭터, 도전과제 추가(현 15 → 20+), 캐릭터별 시작 아이템/패시브 다양화
+- **모험 UX 보강** — 인벤토리 키보드 단축키, 행동 로그 패널, 모바일 보드 줌·드래그, 전투 포기 시 보드 스냅샷 보존
+- **i18n** — 이벤트/아이템/캐릭터 본문 다국어
 - **서버 활성화** — SQLite + Drizzle 스키마, 랭킹/도전과제 검증, 인증
 - **품질** — 단위·E2E 테스트, CI/CD, 코드 스플릿, Lighthouse 검증
 - **배포** — Vercel/Fly.io 환경 검증, server 별도 배포

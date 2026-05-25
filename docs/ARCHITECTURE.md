@@ -207,6 +207,7 @@ Shared
 |---|---|---|
 | `settings` | GlobalSettings | 앱 전역 |
 | `meta:progress` | MetaProgress (totalStarShards, unlockedCharacters, unlockedItemPools, unlockedLocations, permanentBonuses) | 모험 영구 |
+| `meta:runStats` | RunStats (totalRuns / totalVictories / totalBossClears / bossClearsByAct / 누적 골드·노드·Legendary·shop) | 모험 영구 (M6+) |
 | `adventure:run` | AdventureRunState | 런 진행 중만 |
 | `history:index` | string[] (HistoryEntry ID 최대 200개) | 영구 |
 | `history:{id}` | HistoryEntry | 영구 |
@@ -289,6 +290,81 @@ BootScene이 36 텍스처 키(`'standard-wK'`/`'assassins-wK'`/`'saints-wK'` 등
 모든 `<img>`는 `style={{ 'image-rendering': 'pixelated' }}` 인라인 적용으로 픽셀 아트 선명도 보장. Phaser BootScene이 같은 PNG 36개를 preload하지만 SolidJS `<img>`는 별도 DOM request라 브라우저 HTTP 캐시를 공유 — 첫 로드 시 미세한 깜빡임 가능하나 무시 가능.
 
 장식 아이콘(HeaderBar/AdventureEntry/MainMenu의 ♞/♟/♛)은 본 작업 범위 외 — 후속에서 같은 PNG 자산을 활용한 `<PieceIcon>` 재사용 컴포넌트로 통일 예정.
+
+### 7.9 RunStats / 통계·도움말 라우트 (M6+)
+
+모험 누적 통계 `RunStats`(`shared/adventure.ts`)는 `MetaProgress`와 별개의 kv 키 `meta:runStats`에 저장된다. `client/src/lib/storage/runStatsRepo.ts`가 단일 진입점:
+
+- `loadRunStats()` — 기본값으로 보강해서 읽기.
+- `saveRunStats(stats)` — 덮어쓰기.
+- `recordRunEnd(run, outcome, startingGold)` — 런 종료 시 1회 호출. 보스 클리어를 act별로 카운트하고, "획득 골드"는 `run.gold - startingGold`로 시작 골드 베이스라인을 제외해 누적.
+- `recordShopPurchase()` — 현재는 결과 도전과제 평가가 shop **노드 통과**를 카운트하므로 호출처 없음 (후속에서 실제 구매 hook 추가 시 사용).
+
+`AdventureResult.onMount`가 `recordRunEnd` 호출 후 결과 stats를 `evaluateAchievementsOnRunEnd(run, outcome, meta, stats)`로 전달 → 누적형 도전과제(`boss-slayer`, `legend-trio`)가 RunStats 기반으로 평가된다.
+
+라우트:
+
+- `/stats` (`client/src/routes/Stats.tsx`) — `createResource(loadRunStats)`로 비동기 로드. 0건이면 empty hint, 그 외엔 카드 그리드 + 막별 보스 클리어. HeaderBar의 📊 버튼이 진입점(이전 disabled placeholder를 활성화).
+- `/help` (`client/src/routes/Help.tsx`) — 클래식 룰/모험 룰/조작/접근성 4섹션 정적 i18n 텍스트. HeaderBar의 ❓ 버튼이 진입점 (신규).
+
+i18n 키는 `stats.*`, `help.*`, `menu.help`, `adventure.result.*`로 ko/en 양립. 기존 이벤트/아이템/캐릭터 본문 다국어는 별도 사이클.
+
+### 7.10 모험 노드 진행 룰 — advanceTo / availableNextNodes / 전투 포기 (M6+)
+
+이전엔 사용자가 보드 화면을 떠날 수 없도록 ← 버튼을 disabled로 막아 노드 진행이 항상 "클리어 후 떠남"으로 보장됐다. M6+에서 진행 중 전투 포기를 허용하면서 다음 두 규칙을 명시화:
+
+1. **클리어 마킹은 `markCurrentNodeCompleted` 단독 책임.** `advanceTo(nextId)`는 `currentNodeId`만 갱신하고 이전 노드의 `isCompleted`를 건드리지 않는다. (이전엔 advanceTo가 진입 시점에 자동 마킹해 포기 후에도 next가 열리는 버그가 있었다.)
+2. **`availableNextNodes()`는 `currentNode.isCompleted === true`일 때만 `nextNodes` 반환.** 미완료 상태(전투 포기 등)에서는 사용자가 같은 노드만 재진입할 수 있다 — 즉 다시 시도해 클리어해야 다음으로 진행.
+
+전투 포기 흐름 (`AdventureBattle.tsx` / `AdventureBoss.tsx`):
+
+- 좌상단 ← 버튼은 항상 활성화. 진행 중에는 라벨이 "전투 포기" / "보스전 포기".
+- 클릭 → `Modal`로 확인 대화상자 (`계속하기` / `전투 포기`).
+- 확인 → `navigate('/adventure/run/map')`. SolidJS 라우트 unmount의 `onCleanup`이 `setAdventureClickHandler(null)` + `controller.leaveBoardNode()` 처리. 노드는 미완료 상태로 남고, 다시 진입 시 `enterBoardNode()`가 새 보드(시작 진형 + HP)로 재시작.
+- 비전투 노드(shop/event/rest)는 사용자가 "맵으로" 버튼을 누를 때 `markCurrentNodeCompleted` 호출 — leave 시점 자동 클리어.
+
+### 7.11 ChessManager.swapTurnOnly — 모험 damaged 후 차례 흐름 (M6+)
+
+SPEC §5.1의 "공격 시도 = 한 턴 소비" 정의를 chess.js 위에서 표현하기 위해, `AdventureChessManager.tryMove`의 캡처 실패(`remainingHp > 0`) 분기는 chess.js move를 적용하지 않고 attacker를 원위치한다. 그 결과 chess.js 내부 active color가 swap되지 않아 다음 차례 흐름(`handleBoardClick`의 `chess.turn() !== 'w'` 가드, `scheduleAiReply`의 `turn() !== 'b'` 가드)이 모두 막혀 게임이 정지하던 버그가 있었다.
+
+`ChessManager`에 `swapTurnOnly()` 메서드를 추가해 FEN을 직접 조작:
+
+- active color swap (`w` ↔ `b`)
+- en-passant target 무효화 (`-`) — 한 턴 소비됐으므로 권리 소멸
+- halfmove clock +1
+- 흑→백 swap 시 fullmove number +1
+
+`AdventureChessManager.tryMove`의 damaged 분기에서 `chess.swapTurnOnly()` 호출. `previewMove` / `legalDestinations` / `evaluateNaturalStatus`는 모두 chess.js의 active color를 기반으로 동작하므로 swap 이후엔 새 차례 진영 기준 합법수·종료 평가가 자동으로 정확해진다.
+
+`ChessManager.moves()`는 외부 `moveLog` 길이를 반환하므로 chess.load로 인한 chess.js 내부 history 비움에 영향받지 않는다. `applyTurnStartHeal`의 멱등 키(`${side}:${moves().length}`)도 그대로 유효.
+
+### 7.12 dev `__chesslike` 정식화 (M6+)
+
+기존 `main.tsx`의 ad-hoc 노출(`window.__chesslike = { game, bus }`)을 `client/src/lib/devApi.ts`로 분리해 타입화:
+
+```ts
+export interface ChesslikeDevApi {
+  game: typeof gameStore;
+  bus: typeof eventBus;
+  adventure: {
+    current(): ReturnType<typeof activeRun>;
+    giveItem(itemId: string): boolean;
+    addGold(amount: number): boolean;
+  };
+  stats: { load: typeof loadRunStats; save: typeof saveRunStats };
+}
+```
+
+`main.tsx`는 `import.meta.env.DEV` 가드 내에서 `import('@/lib/devApi').then(m => m.installDevApi())`로 dynamic import. 프로덕션 번들은 본 모듈을 import하지 않아 자동 tree-shake.
+
+콘솔 사용 예:
+```js
+__chesslike.adventure.giveItem('crown-of-eternity');
+__chesslike.adventure.addGold(100);
+await __chesslike.stats.load();
+```
+
+별도 디버그 패널 UI는 후속 작업.
 
 ## 8. 관련 문서
 
