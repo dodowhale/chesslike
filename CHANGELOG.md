@@ -17,6 +17,7 @@
 - 신규 i18n 키 ko/en (`menu.help`, `adventure.result.*`, `stats.*`, `help.*`)
 - dev `window.__chesslike` 정식 모듈 `client/src/lib/devApi.ts` (`ChesslikeDevApi` 타입 + `installDevApi`)
 - 본 문서 — CHANGELOG.md 도입
+- 정식 외부 자산 1차 도입 (ASSETS.md §11 발주 스펙 기준): 기물 36 PNG(placeholder generator 출력물 → 정식 도트 아트워크 교체), 노드 아이콘 6종 (`adventure/nodes/{battle,elite,shop,event,rest,boss}.png` 48×48), 보스 스프라이트 3종 (`adventure/bosses/act{1,2,3}.png` 96×96), 캐릭터 초상화 4종 (`adventure/characters/{standard,assassins,saints,locked}.png` 96×96), 아이템 아이콘 30종 (`adventure/items/{itemId}.png` 32×32 — 풀과 1:1 매칭), 막별 배경 3종 (`adventure/backgrounds/act{1,2,3}.png` 480×270). 기물 PNG는 BootScene이 같은 경로 preload라 즉시 보드에 반영, 나머지(노드/보스/캐릭터/아이템/배경)는 UI 통합 후속 사이클 대기.
 
 ### Changed
 - `BoardScene` 입력 처리: 셀별 `setInteractive` → 단일 zone 기반 입력 + `pixelToSquare` 역산. 인접 셀 hit 우선순위 모호함 제거.
@@ -28,9 +29,11 @@
 - 전투 포기 후 맵에서 다음 스테이지 노드가 잘못 진입 가능해지던 버그. 원인: `AdventureRunController.availableNextNodes`가 currentNode의 isCompleted를 보지 않고 nextNodes를 그대로 반환했고, `advanceTo`가 진입 시점에 이전 노드를 자동으로 isCompleted=true 마킹해 markCurrentNodeCompleted 호출 없이도 다음이 열렸음. 수정: `availableNextNodes`는 currentNode.isCompleted=true일 때만 next 반환, `advanceTo`의 자동 마킹 제거 (실제 클리어 마킹은 markCurrentNodeCompleted가 단독 책임).
 - 보스 king HP=0 직후 게임이 정지하던 버그. 원인: `AdventureChessManager.tryMove`가 king을 일반 capture 분기로 처리해 HP 0 이하 시 `chess.tryMove`로 실제 캡처를 시도했으나 chess.js가 king 캡처를 합법수로 인정하지 않아 무브가 fail → `attemptBoardMove`가 syncBoard/scheduleAiReply 없이 종료 → AI 응답 안 옴. 수정: `defender.type==='k'`이면 항상 damaged 분기 + HP 0 clamp + `swapTurnOnly`로 차례만 넘김. SPEC §4.2 "보스 KingHp=0은 약화의 자리표, 페이즈 종료는 체크메이트만"을 정확히 반영. 일반 노드 적 king은 `checkBoardEndCondition`의 `blackKingHp<=0` 분기로 즉시 종료됨.
 - 보스에서 사용자가 체크메이트를 만들어도 페이즈가 종료되지 않던 버그. 원인: `AdventureSceneController.checkBoardEndCondition`의 winner 계산이 정 반대(`turnAfterMove==='w'?'b':'w'`)였고, 호출처에서 `turnAfterMove` 인자의 의미가 일관되지 않아(attemptBoardMove의 'w' vs scheduleAiReply 무브-없음 분기의 'b') 사용자 무브로 만든 흑 체크메이트가 winner='b' → `finalize('defeat')`로 잘못 흘렀음. 보스는 KingHp 분기가 없어 isCheckmate 경로만 사용하므로 증상이 보스에서 두드러졌고 일반 노드는 KingHp<=0 분기에 가려져 있었음. 수정: `chess.turn()`(체크메이트당한 진영=loser) 기반으로 winner를 직접 계산, `turnAfterMove` 인자 제거.
+- 정의만 있고 실제로는 작동하지 않던 modifier들 정리. **변경 전**: `thornsDamage`(반사 아이템 7종 + 글로벌 1종), `healPerTurn`(아이템 측), `jumpOver`/`range`(knight-spurs)가 어디서도 처리되지 않아 사용자가 장착해도 효과 없음. **수정**: (a) `thornsDamage` 실 구현 — `AdventureChessManager.tryMove`의 damaged/captured 양쪽에서 `effectiveThornsDamage(defender, globalMods)`를 attacker.hp에서 차감 (본 사이클은 min 1 clamp, 상호 사망은 후속). (b) `healPerTurn` 아이템 합산 — `applyTurnStartHeal`이 각 piece의 장착·글로벌을 추가 합산. 캐릭터 패시브 healPerTurn은 그대로 합산. (c) `knight-spurs` modifier 교체 — chess.js 룰 확장이 필요한 jumpOver/range를 본 사이클에서 빼고 직관적인 `{ hp: 15, attack: 5 }`로 변경, description "장착 기물 HP +15, 공격력 +5". 정식 점프 확장은 후속. (d) 반사 아이템 description "피격 시 반사 +X" 형식으로 통일(spike-helm·fang-amulet·thorn-mantle·ironbark-amulet·serpent-fang·phantom-cloak·eclipse-aegis). AdventureInventory의 jumpOver/range chip 제거 — 작동 안 하는 효과를 사용자에게 노출하지 않음.
 
 ### Notes
-- 본 사이클은 외부 자산(스프라이트/BGM/SFX), 서버 인프라(SQLite/leaderboard/인증), 새 캐릭터(요새단/혼돈단), 테스트 자동화, 드래그·드롭 입력은 제외. 별도 사이클에서 후속.
+- 본 사이클은 외부 자산 1차 도입(기물 + 노드/보스/캐릭터/아이템/배경 PNG)까지 포함. **BGM/SFX 음원**, 서버 인프라(SQLite/leaderboard/인증), 새 캐릭터(요새단/혼돈단), 테스트 자동화, 드래그·드롭 입력, 자산의 UI 통합(노드 아이콘·보스·캐릭터 초상화·아이템 카드·배경)은 별도 사이클에서 후속.
+- **generator 가드**: `scripts/generate-piece-placeholders.ts`는 정식 자산과 같은 경로에 출력하므로 정식 자산 도입 후에는 `bun run gen:placeholders` 실행 금지. 1차 placeholder는 `client/public/assets/pieces_old/`에 보존(gitignore 적용 — 추적 X, 로컬 복구용).
 
 ## [0.5.0] — 2026-05-24 — M5 Polish
 

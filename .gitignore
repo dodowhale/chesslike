@@ -22,6 +22,9 @@ build/
 # Stockfish 엔진 파일은 postinstall로 복사되므로 추적하지 않는다
 client/public/stockfish/
 
+# 정식 자산 도입 시 보존한 placeholder 백업 — git history에 이미 있으므로 트래킹 X
+client/public/assets/pieces_old/
+
 # OS
 .DS_Store
 Thumbs.db

@@ -139,15 +139,18 @@
 코드 측 마일스톤은 M5까지 완료. 다음 항목은 외부 자산·추가 콘텐츠·검증 작업입니다.
 
 ### 외부 자산 (디자이너 / 사운드 디자이너 협업)
-- [ ] 정식 도트 에셋 — 기물 12종 × 캐릭터 스킨 × 보드 테마 (Default/Forest/Ocean) — placeholder generator로 1차 적용됨(`scripts/generate-piece-placeholders.ts`), 정식 아트워크는 후속
+- [x] 정식 도트 에셋 — 기물 12종 × 캐릭터 스킨 3종(36 PNG) 정식 아트워크 도입 완료 (placeholder generator 출력 → 디자이너 도트로 교체). 보드 테마(Default/Forest/Ocean) 칸 색은 BoardScene 상수.
 - [x] 막별 보드 테마(Forest/Ocean)에 맞춘 기물 색상 변형 — generator에 character 차원 + BoardScene THEME_COLORS map으로 적용 완료 (직교 시스템)
 - [x] 캐릭터별 기물 스킨(암살자단·신성단 등) — generator CHARACTER_PALETTES 3종 + BoardScene 텍스처 키 prefix로 적용 완료 (정규단 아이보리/암살자단 은회색/신성단 금색, 흑은 baseline 공통)
 - [x] PromotionDialog 등 UI 아이콘 통일 — generator PNG 활용 완료 (PromotionDialog 4 선택지 + GameOverDialog 승자 K). HeaderBar/AdventureEntry/MainMenu 장식 아이콘은 후속
-- [ ] 노드 아이콘 6종 + 보스 스프라이트 3종 (1막/2막/3막)
-- [ ] 캐릭터 초상화 (정규단/암살자단/신성단 + 추가)
-- [ ] 아이템 아이콘 17종 (Common 10 + Uncommon 5 + Rare 5 + Legendary 2)
-- [ ] BGM 5트랙 (메인메뉴/클래식/막별/보스/결과)
-- [ ] SFX 패키지 (클릭/무브/캡처/체크/체크메이트/아이템 획득/레벨업 등)
+- [x] 노드 아이콘 6종 (`adventure/nodes/{battle,elite,shop,event,rest,boss}.png` 48×48) — 자산 도입 완료. UI 통합(AdventureMap.tsx 이모지 → `<img>`)은 후속
+- [x] 보스 스프라이트 3종 (`adventure/bosses/act{1,2,3}.png` 96×96) — 자산 도입 완료. UI 통합(AdventureBoss.tsx 헤더 + 인터스티셜)은 후속
+- [x] 캐릭터 초상화 4종 (`adventure/characters/{standard,assassins,saints,locked}.png` 96×96) — 자산 도입 완료. UI 통합(AdventureEntry 캐릭터 카드)은 후속
+- [x] 아이템 아이콘 30종 (`adventure/items/{itemId}.png` 32×32, 풀과 1:1 매칭) — 자산 도입 완료. UI 통합(AdventureInventory/Shop 카드)은 후속
+- [x] 막별 배경 3종 (`adventure/backgrounds/act{1,2,3}.png` 480×270 픽셀 아트) — 자산 도입 완료. UI 통합(AdventureMap/Battle/Boss 배경 레이어)은 후속
+- [ ] BGM 5+2트랙 (메인메뉴/클래식/막별 3/보스/결과 승·패) — ASSETS.md §11.10 스펙
+- [ ] SFX 13키 (클릭/무브/캡처/체크/체크메이트/캐슬/승급/아이템획득/노드진입/보스등장/HP데미지/캐릭터사망/별의조각) — ASSETS.md §11.11 스펙
+- [ ] **자산 UI 통합 (후속)** — 노드/보스/캐릭터/아이템/배경 PNG를 실제 화면에서 사용. 기물 PNG는 BootScene preload로 이미 보드에 반영됨.
 
 ### 코드 — Phaser 보드 인터랙션 강화
 - [x] BoardScene을 sprite identity 유지 구조로 리팩토링 (pieceLayer.removeAll 제거)
@@ -155,9 +158,12 @@
 - [ ] 드래그·드롭 입력 (클릭/탭과 공존, 합법수 미리보기)
 - [x] HP 바 변화 애니메이션 (데미지 받을 때 시각 피드백)
 - [ ] 보스 페이즈 시각 인터스티셜 (페이즈 클리어 → 다음 페이즈 진입 사이 효과)
+- [ ] 나이트 jumpOver/range modifier 정식 구현 — chess.js 룰 확장(추가 합법수 + isCheckmate/isStalemate 일관 유지). knight-spurs 원안 "점프 거리 +1" 복원용. 현재는 hp/attack stat boost로 임시 대체.
+- [ ] 반사(thornsDamage)로 attacker HP 0 이하 시 상호 사망 — chess.js의 attacker 칸 비우기 우회 필요. 현재는 min 1 clamp.
 - [x] 모험 damaged 후 turn swap — `ChessManager.swapTurnOnly()` 도입 + `AdventureChessManager.tryMove` damaged 분기에서 호출. 캡처 실패 후 chess.js active color가 안 바뀌어 게임이 정지하던 버그 수정.
 - [x] 보스 king 공격 시 chess.js가 e8을 합법수로 제공해 capture 분기 진입 → king 캡처 합법 무브 인정 안 됨 → stuck 버그. `AdventureChessManager.tryMove`에서 `defender.type==='k'`이면 항상 damaged 처리 + HP 0 clamp. SPEC §4.2 "보스 KingHp=0은 약화의 자리표, 페이즈 종료는 체크메이트만" 정확 반영.
 - [x] 보스 체크메이트 winner 역전 버그 — `checkBoardEndCondition`이 `turnAfterMove`로 winner를 잘못 계산해 사용자 체크메이트가 finalize defeat로 흘렀음. `chess.turn()`(loser) 기반으로 winner 직접 계산, 인자 제거.
+- [x] 미구현 modifier 일괄 처리 — `thornsDamage`(반사) 실 구현, `healPerTurn`(아이템) `applyTurnStartHeal`에 합산, `knight-spurs`의 `jumpOver`/`range`를 `{hp:15, attack:5}` stat boost로 임시 교체(정식 chess 룰 확장은 후속). 반사 아이템 description "피격 시 반사 +X" 통일.
 
 ### 코드 — AI 강화
 - [ ] 보스 전용 강한 AI (Stockfish 또는 페이즈별 사전 정의 무브 시퀀스)

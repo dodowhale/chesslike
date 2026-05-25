@@ -27,8 +27,9 @@
 | M5 폴리시 | ✅ 완료 (외부 자산은 M6+) |
 | M6+ 비주얼·인터랙션 1차 | ✅ Sprite identity·Tween / 픽셀 도트 글리프 / 보드 테마 / 캐릭터 스킨 / 다이얼로그 PNG 통일 |
 | M6+ 콘텐츠·UI·UX 패키지 | ✅ 이벤트 풀 6→15 · 아이템 Rare/Legendary 확장 · 도전과제 5→15 · `/stats` `/help` 신규 · 모험 결과 막별 통계 · 보드 클릭 영역 확대 · `RunStats` 영구 통계 · CHANGELOG.md · `__chesslike` 정식화 |
-| M6+ 모험 흐름 버그 수정 | ✅ damaged 후 turn swap (`swapTurnOnly`) · 전투/보스전 진행 중 포기 모달 · `availableNextNodes`/`advanceTo` 가드 |
-| M6+ 후속 (외부 자산·콘텐츠·인프라) | ⏳ TODO에 별도 섹션 |
+| M6+ 모험 흐름 버그 수정 | ✅ damaged 후 turn swap (`swapTurnOnly`) · 전투/보스전 진행 중 포기 모달 · `availableNextNodes`/`advanceTo` 가드 · 보스 KingHp 0 stuck · 체크메이트 winner 역전 · 미구현 modifier(thornsDamage/healPerTurn 아이템/knight-spurs) 일괄 정리 |
+| M6+ 외부 자산 1차 도입 | ✅ 기물 36 PNG (placeholder → 정식 도트) · 노드 아이콘 6 · 보스 스프라이트 3 · 캐릭터 초상화 4 · 아이템 아이콘 30 · 막별 배경 3. 기물은 즉시 보드 반영, 나머지는 UI 통합 후속 |
+| M6+ 후속 (BGM/SFX·자산 UI 통합·서버·콘텐츠 확장) | ⏳ TODO에 별도 섹션 |
 
 자세한 진행 항목과 M6+ 후속 작업은 [docs/TODO.md](./docs/TODO.md) 참조.
 

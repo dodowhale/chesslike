@@ -320,14 +320,14 @@ generator에 `const GLYPH_ROW = /^[ .X]{32}$/` 정규식 어설션이 있어 빌
 | 배경 | 투명 또는 캐릭터 톤 원형 후광 (디자이너 재량) |
 | 톤 매칭 | 각 캐릭터의 기물 wFill(11.2 표) 톤을 강조 — 한눈에 같은 진영임을 인식 |
 
-### 11.8 아이템 아이콘 (현재 풀 23종)
+### 11.8 아이템 아이콘 (현재 풀 30종)
 
 | 등급 | 개수 (현 풀) | 권장 톤 |
 |---|---|---|
 | Common | 10 | 회색 ~ 베이지 (`#9ca3af` ~ `#d4c5a0`) |
 | Uncommon | 5 | 초록 (`#4ade80` ~ `#22c55e`) |
 | Rare | 10 | 파랑 ~ 사이안 (`#60a5fa` ~ `#22d3ee`) |
-| Legendary | 5 (실 5종) | 자주·금색 (`#c084fc` + `#fbbf24` 빛 효과) |
+| Legendary | 5 | 자주·금색 (`#c084fc` + `#fbbf24` 빛 효과) |
 
 | 항목 | 값 |
 |---|---|
@@ -348,7 +348,7 @@ generator에 `const GLYPH_ROW = /^[ .X]{32}$/` 정규식 어설션이 있어 빌
 
 | 항목 | 값 |
 |---|---|
-| 사이즈 | **1920×1080 px** (16:9 데스크톱), 모바일은 CSS `object-fit: cover` |
+| 사이즈 | **480×270 px** (16:9 픽셀 아트 — 디자이너가 도트 톤 유지 위해 채택. CSS `object-fit: cover` + `image-rendering: pixelated`로 확대) |
 | 디렉토리 | `client/public/assets/adventure/backgrounds/act{1,2,3}.png` |
 | 톤 | 1막 숲 (녹/갈) / 2막 던전 (석/암회) / 3막 하늘성 (청/금) |
 | 레이어 분리 (옵션) | 전경/중경/원경 PNG 3장 (parallax용). 미적용 시 단일 PNG |
@@ -422,7 +422,26 @@ generator에 `const GLYPH_ROW = /^[ .X]{32}$/` 정규식 어설션이 있어 빌
 - [ ] 파일명 소문자 + 케밥 케이스
 - [ ] OGG는 q=5 또는 192kbps 이상, MP3 폴백 동봉
 
-### 11.13 색 톤 일관성 가이드
+### 11.13 정식 자산 도입 상태 (2026-05-25 1차)
+
+ASSETS.md §11 발주 스펙에 기반해 사용자가 1차 정식 자산을 도입. 사이즈·디렉토리·파일명 모두 스펙 부합 (배경만 480×270로 디자이너 재량 채택). 풀과 1:1 매칭 검증 완료.
+
+| 카테고리 | 발주 수 | 도입 수 | 위치 | 상태 |
+|---|---|---|---|---|
+| 기물 36 PNG | 36 | 36 | `client/public/assets/pieces/{characterId}/{side}{type}.png` | ✅ placeholder 교체 |
+| 노드 아이콘 | 6 | 6 | `client/public/assets/adventure/nodes/{battle,elite,shop,event,rest,boss}.png` | ✅ 신규 도입 |
+| 보스 스프라이트 | 3 | 3 | `client/public/assets/adventure/bosses/act{1,2,3}.png` | ✅ 신규 도입 |
+| 캐릭터 초상화 | 3+1 | 4 | `client/public/assets/adventure/characters/{standard,assassins,saints,locked}.png` | ✅ 신규 도입 |
+| 아이템 아이콘 | 30 | 30 | `client/public/assets/adventure/items/{itemId}.png` | ✅ 신규 도입 |
+| 막별 배경 | 3 | 3 | `client/public/assets/adventure/backgrounds/act{1,2,3}.png` | ✅ 신규 도입 |
+| BGM | 7 트랙 | 0 | `client/public/assets/bgm/` | ⏳ 사운드 디자이너 발주 대기 |
+| SFX | 13 키 | 0 | `client/public/assets/sfx/` | ⏳ 사운드 디자이너 발주 대기 |
+
+**generator 가드**: 기물 placeholder generator(`scripts/generate-piece-placeholders.ts`)는 동일 경로에 PNG를 출력하므로 `bun run gen:placeholders`를 실행하면 정식 자산이 덮어쓰여진다. 정식 자산 도입 후에는 generator 실행 금지. `pieces_old/`에 1차 placeholder를 보존했고 .gitignore로 추적은 안 함 — 필요 시 복구만 가능.
+
+**코드 통합 상태**: 본 사이클은 자산 파일 도입까지. 노드 아이콘·보스·캐릭터 초상화·아이템 카드·배경의 UI 통합은 후속 사이클에서 컴포넌트별로 진행 (현재는 이모지/색상 fallback 그대로 동작 — 자산만 디스크에 있고 화면엔 미반영). 기물 PNG는 BootScene이 같은 경로에서 preload하므로 보드는 즉시 정식 도트 적용.
+
+### 11.14 색 톤 일관성 가이드
 
 UI 코드의 Tailwind 팔레트(slate/amber/emerald/purple)와 충돌하지 않도록:
 
