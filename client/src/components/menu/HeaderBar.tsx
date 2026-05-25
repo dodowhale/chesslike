@@ -17,6 +17,14 @@ export function HeaderBar(props: HeaderBarProps) {
       <div class="flex items-center gap-2">
         <button
           type="button"
+          aria-label={dict().menu.help}
+          onClick={() => navigate('/help')}
+          class="w-9 h-9 rounded-md hover:bg-slate-800 transition-colors"
+        >
+          ❓
+        </button>
+        <button
+          type="button"
           aria-label={dict().menu.achievements}
           onClick={() => navigate('/achievements')}
           class="w-9 h-9 rounded-md hover:bg-slate-800 transition-colors"
@@ -26,10 +34,8 @@ export function HeaderBar(props: HeaderBarProps) {
         <button
           type="button"
           aria-label={dict().menu.stats}
-          aria-disabled="true"
-          tabindex={-1}
-          class="w-9 h-9 rounded-md hover:bg-slate-800 transition-colors opacity-50 cursor-not-allowed"
-          disabled
+          onClick={() => navigate('/stats')}
+          class="w-9 h-9 rounded-md hover:bg-slate-800 transition-colors"
         >
           📊
         </button>

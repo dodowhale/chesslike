@@ -5,6 +5,12 @@ const TILE = 56;
 const BOARD_SIZE = TILE * 8;
 const MARGIN_X = 24;
 const MARGIN_Y = 24;
+/**
+ * 모바일 터치 친화: 보드 외곽으로 hit area를 약간 확장한다.
+ * 인접 셀끼리는 이미 빈틈 없이 맞닿아 있어서 클릭이 한 셀로 잡히므로 외곽만 패딩.
+ * 내부 셀 클릭에는 영향 없고, 보드 경계선 ±HIT_PAD 픽셀 안쪽 클릭이 모서리 셀로 안내된다.
+ */
+const HIT_PAD = 12;
 
 const HIGHLIGHT = 0x6dd47e;
 const SELECTED = 0xffd23f;
@@ -124,9 +130,13 @@ export class BoardScene extends Phaser.Scene {
   }
 
   private pixelToSquare(localX: number, localY: number): string | null {
-    if (localX < 0 || localY < 0 || localX >= BOARD_SIZE || localY >= BOARD_SIZE) return null;
-    const fileDisplay = Math.floor(localX / TILE);
-    const rankDisplay = Math.floor(localY / TILE);
+    // 외곽 HIT_PAD 영역의 클릭은 가장 가까운 모서리 셀로 흡수한다.
+    if (localX < -HIT_PAD || localY < -HIT_PAD) return null;
+    if (localX >= BOARD_SIZE + HIT_PAD || localY >= BOARD_SIZE + HIT_PAD) return null;
+    const clampedX = Math.min(Math.max(localX, 0), BOARD_SIZE - 1);
+    const clampedY = Math.min(Math.max(localY, 0), BOARD_SIZE - 1);
+    const fileDisplay = Math.floor(clampedX / TILE);
+    const rankDisplay = Math.floor(clampedY / TILE);
     const file = this.orientation === 'w' ? fileDisplay : 7 - fileDisplay;
     const rank = this.orientation === 'w' ? 8 - rankDisplay : rankDisplay + 1;
     return fileRankToSquare(file, rank);
@@ -146,14 +156,26 @@ export class BoardScene extends Phaser.Scene {
           TILE,
           color,
         );
-        tile.setInteractive({ useHandCursor: true });
-        tile.on('pointerup', () => {
-          const square = this.pixelToSquare(f * TILE + 1, r * TILE + 1);
-          if (square) eventBus.emit('board:squareClicked', { square });
-        });
         this.tileLayer.add(tile);
       }
     }
+    // 단일 입력 영역: 보드 + HIT_PAD 외곽. pointerup의 로컬 좌표로 셀을 역산한다.
+    // 셀별 콜백 등록을 대신해 인접 셀 hit 중복·우선순위 모호함 제거.
+    const inputZone = this.add.zone(
+      BOARD_SIZE / 2,
+      BOARD_SIZE / 2,
+      BOARD_SIZE + 2 * HIT_PAD,
+      BOARD_SIZE + 2 * HIT_PAD,
+    );
+    inputZone.setOrigin(0.5, 0.5);
+    inputZone.setInteractive({ useHandCursor: true });
+    inputZone.on('pointerup', (pointer: Phaser.Input.Pointer) => {
+      const localX = pointer.x - MARGIN_X;
+      const localY = pointer.y - MARGIN_Y;
+      const square = this.pixelToSquare(localX, localY);
+      if (square) eventBus.emit('board:squareClicked', { square });
+    });
+    this.tileLayer.add(inputZone);
 
     const fileLabels = this.orientation === 'w' ? FILES : [...FILES].reverse();
     const rankLabels = this.orientation === 'w'

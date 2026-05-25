@@ -93,3 +93,19 @@ export interface MetaProgress {
     firstNodeRewardGuaranteed?: boolean;
   };
 }
+
+/**
+ * 모험 모드 누적 통계. 메타와 별개의 kv 키(`meta:runStats`)에 영구 저장.
+ * 통계 화면(/stats) + 누적형 도전과제(boss-slayer, legend-trio 등)에서 사용.
+ */
+export interface RunStats {
+  totalRuns: number;
+  totalVictories: number;
+  totalBossClears: number;
+  totalGoldEarned: number;
+  totalNodesCompleted: number;
+  totalLegendariesFound: number;
+  totalShopPurchases: number;
+  /** 막별 보스 클리어 횟수. */
+  bossClearsByAct: { act1: number; act2: number; act3: number };
+}

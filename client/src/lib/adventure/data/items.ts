@@ -25,16 +25,24 @@ export const ITEM_POOL: Item[] = [
   { id: 'thorn-mantle', name: '가시 망토', rarity: 'uncommon', category: 'effect', description: '반사 +5', modifier: { thornsDamage: 5 } },
   { id: 'titan-belt', name: '거인의 허리띠', rarity: 'uncommon', category: 'stat', description: 'HP +15, 공격력 +3', modifier: { hp: 15, attack: 3 } },
 
-  // ---------- Rare (5) — M4 해금 ----------
+  // ---------- Rare (10) — M4 해금 ----------
   { id: 'demon-edge', name: '마검의 날', rarity: 'rare', category: 'stat', description: '공격력 +8', modifier: { attack: 8 } },
   { id: 'aegis-plate', name: '아이기스 판금', rarity: 'rare', category: 'stat', description: 'HP +30', modifier: { hp: 30 } },
   { id: 'ironbark-amulet', name: '강목 부적', rarity: 'rare', category: 'effect', description: '반사 +8, 턴마다 HP +3', modifier: { thornsDamage: 8, healPerTurn: 3 } },
   { id: 'storm-glaive', name: '폭풍 글레이브', rarity: 'rare', category: 'stat', description: 'HP +12, 공격력 +6', modifier: { hp: 12, attack: 6 } },
   { id: 'warden-mantle', name: '수호자의 망토', rarity: 'rare', category: 'effect', description: '턴마다 HP +8', modifier: { healPerTurn: 8 } },
+  { id: 'runic-gauntlet', name: '룬각인 건틀릿', rarity: 'rare', category: 'stat', description: 'HP +18, 공격력 +4', modifier: { hp: 18, attack: 4 } },
+  { id: 'serpent-fang', name: '독사의 송곳니', rarity: 'rare', category: 'effect', description: '공격력 +7, 반사 +3', modifier: { attack: 7, thornsDamage: 3 } },
+  { id: 'oathkeeper-shield', name: '맹약의 방패', rarity: 'rare', category: 'effect', description: 'HP +24, 턴마다 HP +2', modifier: { hp: 24, healPerTurn: 2 } },
+  { id: 'phantom-cloak', name: '환영의 망토', rarity: 'rare', category: 'effect', description: '턴마다 HP +5, 반사 +3', modifier: { healPerTurn: 5, thornsDamage: 3 } },
+  { id: 'dragon-scale', name: '용비늘 갑옷', rarity: 'rare', category: 'stat', description: 'HP +20, 공격력 +5', modifier: { hp: 20, attack: 5 } },
 
-  // ---------- Legendary (2) — M4 해금, 보스 보상 ----------
+  // ---------- Legendary (5) — M4 해금, 보스 보상 ----------
   { id: 'crown-of-eternity', name: '영원의 왕관', rarity: 'legendary', category: 'stat', description: 'HP +50, 공격력 +10', modifier: { hp: 50, attack: 10 } },
   { id: 'soul-of-titan', name: '거인의 영혼', rarity: 'legendary', category: 'effect', description: 'HP +25, 공격력 +5, 매 턴 HP +5', modifier: { hp: 25, attack: 5, healPerTurn: 5 } },
+  { id: 'worldtree-bough', name: '세계수 가지', rarity: 'legendary', category: 'effect', description: 'HP +35, 턴마다 HP +6', modifier: { hp: 35, healPerTurn: 6 } },
+  { id: 'sunforged-blade', name: '햇빛으로 벼린 검', rarity: 'legendary', category: 'stat', description: '공격력 +15', modifier: { attack: 15 } },
+  { id: 'eclipse-aegis', name: '식의 방패', rarity: 'legendary', category: 'effect', description: 'HP +40, 반사 +10', modifier: { hp: 40, thornsDamage: 10 } },
 ];
 
 export function getItemById(id: string): Item | undefined {

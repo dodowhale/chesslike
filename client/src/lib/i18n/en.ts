@@ -13,6 +13,7 @@ export const en: I18nDict = {
     settings: 'Settings',
     achievements: 'Achievements',
     stats: 'Stats',
+    help: 'Help',
     starShards: 'Star Shards',
     build: 'Build',
     meta: 'Meta Progress',
@@ -32,7 +33,7 @@ export const en: I18nDict = {
     back: 'Back',
     characterSelect: 'Character Select',
     characterSelectDesc:
-      'Clear Act 1 boss in one run. Star Shards permanently upgrade future runs.',
+      'Clear the boss in one run. Star Shards permanently upgrade future runs.',
     resumeRun: 'Run in progress',
     resume: 'Resume',
     discard: 'Discard',
@@ -41,6 +42,18 @@ export const en: I18nDict = {
     inventory: 'Inventory',
     gold: 'Gold',
     abandon: 'Abandon Run',
+    result: {
+      victory: 'Run Success — Boss Cleared',
+      defeat: 'Run Failed',
+      completedNodes: 'Completed Nodes',
+      remainingGold: 'Remaining Gold',
+      thisRunShards: 'Star Shards this run',
+      byActHeading: 'Per-Act Progress',
+      actUnreached: 'unreached',
+      newAchievements: 'Newly Unlocked Achievements',
+      nextRun: 'Next Run',
+      mainMenu: 'Main Menu',
+    },
   },
   settings: {
     title: 'Settings',
@@ -58,5 +71,36 @@ export const en: I18nDict = {
     notationSan: 'SAN',
     notationSanKr: 'SAN + Korean',
     close: 'Close',
+  },
+  stats: {
+    title: 'Stats',
+    emptyHint:
+      'No completed adventure runs yet. Finish a run and your aggregated stats will appear here.',
+    totalRuns: 'Total Runs',
+    totalVictories: 'Victories',
+    winRate: 'Win Rate',
+    bossClears: 'Boss Clears',
+    bossClearsByAct: 'Boss Clears by Act',
+    goldEarned: 'Total Gold Earned',
+    nodesCompleted: 'Total Nodes Completed',
+    legendaries: 'Legendaries Found',
+    shopPurchases: 'Shop Nodes Visited',
+    back: 'Main Menu',
+  },
+  help: {
+    title: 'Help',
+    classicHeading: 'Classic Mode',
+    classicBody:
+      'Follows FIDE chess rules. Games end on checkmate, stalemate, the 50-move rule, threefold repetition, time forfeit, or resignation. Single play uses the Stockfish AI and you can take back moves at your discretion. Local multiplayer is hot-seat — takebacks and draw offers require the opponent to agree.',
+    adventureHeading: 'Adventure Mode',
+    adventureBody:
+      'Each piece has HP and ATK. Items, node maps, and character passives shape combat. Stalemate on regular nodes is a loss; boss nodes end on checkmate only. At run end, Star Shards are added to your meta progress to power future runs.',
+    controlsHeading: 'Controls',
+    controlsBody:
+      'Tap or click a board square to select a piece, then tap a highlighted square to move. Pawns reaching the last rank open a promotion dialog. On mobile, the hit area extends slightly beyond each square for one-hand play.',
+    accessibilityHeading: 'Accessibility',
+    accessibilityBody:
+      'In Settings, enabling Reduce Motion makes board flips, piece moves, and dialog transitions instant. BGM/SFX volume can be tuned independently. Language (Korean/English) and notation (SAN / SAN + Korean) are switchable.',
+    back: 'Main Menu',
   },
 };

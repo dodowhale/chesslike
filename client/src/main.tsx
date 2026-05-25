@@ -23,14 +23,7 @@ document.addEventListener('pointerdown', initAudioOnce, { once: true });
 document.addEventListener('keydown', initAudioOnce, { once: true });
 
 if (import.meta.env.DEV) {
-  void (async () => {
-    const gs = await import('@/store/gameStore');
-    const bus = await import('@/lib/phaser/bridge/eventBus');
-    (window as unknown as { __chesslike: unknown }).__chesslike = {
-      game: gs,
-      bus: bus.eventBus,
-    };
-  })();
+  void import('@/lib/devApi').then((mod) => mod.installDevApi());
 }
 
 render(() => <App />, root);

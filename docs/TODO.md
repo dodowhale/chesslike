@@ -161,10 +161,10 @@
 ### 코드 — 콘텐츠 확장
 - [ ] 요새단 캐릭터 (룩 강화 파티, M4 선택 사항)
 - [ ] 혼돈단 캐릭터 (랜덤 시작 진형)
-- [ ] 도전과제 추가 (현재 5 → 15~20종, 메타 잠금해제 트리거)
-- [ ] 통계 화면 (HeaderBar 📊 아이콘 활성화) — 총 런 수/승률/총 골드 등
-- [ ] 이벤트 풀 확장 (현재 6 → 15~20종)
-- [ ] 아이템 풀 확장 (Rare 5 → 10, Legendary 2 → 5)
+- [x] 도전과제 5 → 15 (act2/act3-clear, saints-clear, gold-hoarder, flawless-act1, event-explorer, shop-spender, boss-slayer, rare-trio, legend-trio) — RunStats 누적형 평가 포함
+- [x] 통계 화면 `/stats` (총 런/승률/보스 클리어/누적 골드/막별 보스 등) + HeaderBar 📊 활성화
+- [x] 이벤트 풀 6 → 15 (goblin-ambush, hermits-blessing, cursed-chest, pilgrims-shrine, wanderers-deal, ravens-warning, forgotten-library, merchants-favor, arena-trial)
+- [x] 아이템 풀 Rare 5 → 10, Legendary 2 → 5
 - [ ] 캐릭터별 시작 아이템/패시브 다양화
 
 ### 코드 — 서버 / 인프라
@@ -184,17 +184,17 @@
 - [ ] Lighthouse 모바일 점수 검증
 
 ### 코드 — 모험 UX 보강
-- [ ] 모험 결과 화면에 막별 통계 (현재 마지막 막 노드 카운트만 표시)
+- [x] 모험 결과 화면에 막별 통계 (1/2/3막별 완료 노드 + 신규 잠금해제 도전과제 표시)
 - [ ] 인벤토리 키보드 단축키
 - [ ] 보드 좌측에 행동 로그 패널 (모험 전투에서 데미지/캡처 시각화)
 - [ ] 모바일 보드 줌·드래그 (작은 화면에서 기물 클릭 어려움)
-- [ ] 보드 클릭 영역 확대 (장갑/터치 친화)
+- [x] 보드 클릭 영역 확대 (BoardScene 단일 zone + HIT_PAD 12px, 모서리 셀로 외곽 클릭 흡수)
 
 ### 문서 / DX
-- [ ] 이벤트/아이템/캐릭터 다국어 (현재 한국어 고정 텍스트)
-- [ ] 도움말 화면 (룰/단축키/접근성 옵션)
-- [ ] dev __chesslike 노출 API 정식화 + 디버그 패널
-- [ ] CHANGELOG.md 도입
+- [ ] 이벤트/아이템/캐릭터 다국어 (현재 한국어 고정 텍스트) — 신규 UI 키 ko/en만 반영, 이벤트/아이템/캐릭터 본문 다국어는 미정
+- [x] 도움말 화면 `/help` (룰/조작/접근성) + HeaderBar ❓ 진입점
+- [x] dev `__chesslike` 정식화 (`client/src/lib/devApi.ts` + `ChesslikeDevApi` 타입) — 디버그 패널 UI는 후속
+- [x] CHANGELOG.md 도입 (Keep-a-Changelog, M0~M5 요약 + Unreleased)
 
 ## 참고
 
