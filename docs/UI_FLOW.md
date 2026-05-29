@@ -26,7 +26,8 @@
 
 라우터는 `@solidjs/router` 사용. 모험 라우트들은 `activeRun` 전역 시그널을 공유하며, 컨트롤러가 없으면 `/adventure`로 자동 리다이렉트한다.
 
-`/adventure/run/battle`과 `/adventure/run/boss`는 M5부터 실제 보드 인터랙션. `controller.enterBoardNode()`로 `AdventureChessManager` 활성화 → BoardScene이 piece HP 바를 그리고 사용자 클릭 → `setAdventureClickHandler` → `controller.attemptBoardMove(uci)` → AI random 응답 → `checkBoardEndCondition`이 SPEC §4.1(일반)/§4.2(보스) 룰로 종료 결정.
+`/adventure/run/battle`과 `/adventure/run/boss`는 M5부터 실제 보드 인터랙션. `controller.enterBoardNode()`로 `AdventureChessManager` 활성화 → BoardScene이 piece HP 바를 그리고 사용자 클릭 → `setAdventureClickHandler` → `controller.attemptBoardMove(uci)` → AI random 응답 → `checkBoardEndCondition`이 [ADVENTURE.md §4](../modes/ADVENTURE.md#4-승리-조건-하이브리드-룰) 및 [SPEC.md §5](../SPEC.md#5-combat--edge-cases-adventure-mode) 룰로 종료 결정.
+
 
 ## 1. 전체 화면 전이도
 
