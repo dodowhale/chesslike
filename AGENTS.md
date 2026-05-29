@@ -92,6 +92,6 @@
 
 - `CLAUDE.md` → 본 문서(`AGENTS.md`)를 import
 - `codex.md` (추가 예정) → 본 문서 참조
-- Antigravity CLI 진입 파일 (추가 예정) → 본 문서 참조
+- `ANTIGRAVITY.md` → 본 문서(`AGENTS.md`)를 참조
 
 새 CLI를 추가할 때는 그 CLI의 컨벤션을 따르는 진입 파일을 만들고, 본 `AGENTS.md`를 가리키도록 작성하세요. 본 문서는 단일 진실 원천(Single Source of Truth)입니다.
