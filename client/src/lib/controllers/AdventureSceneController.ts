@@ -332,18 +332,31 @@ export class AdventureRunController implements SceneController {
       for (const p of preservePlayerPieces) {
         if (p.side === 'w') preservedById.set(p.id, p);
       }
+    } else {
+      // 일반 노드 진입 시: 이전 전투에서 유지되고 있는 런 상태(this.run.pieces)에서 아군 기물 상태 복원
+      for (const p of this.run.pieces) {
+        if (p.side === 'w') preservedById.set(p.id, p as PieceState);
+      }
     }
-    const pieces: PieceState[] = character.startingPieces.map((loadout, idx) => {
+    
+    const pieces: PieceState[] = [];
+    character.startingPieces.forEach((loadout, idx) => {
       const base = basePieceStats(loadout.type);
       const baseHp = loadout.baseStatsOverride?.hp ?? base.hp;
       const baseAttack = loadout.baseStatsOverride?.attack ?? base.attack;
-      const id = `b-${idx}-${loadout.side}-${loadout.type}`;
+      const id = `${loadout.side === 'w' ? 'p' : 'e'}-${idx}-${loadout.side}-${loadout.type}-${loadout.startingSquare}`;
       const preserved = preservedById.get(id);
+      
       if (preserved) {
-        return { ...preserved, square: loadout.startingSquare as PieceState['square'] };
+        // 이미 런 상태에 기물이 존재하는 경우 보존하되, 체력이 0 이하인(사망한) 기물은 결원 처리하여 스폰하지 않음
+        if (preserved.hp > 0) {
+          pieces.push({ ...preserved, square: loadout.startingSquare as PieceState['square'] });
+        }
+        return;
       }
+      
       const hpBonus = loadout.side === 'w' && loadout.type === 'k' ? this.startHpBonus : 0;
-      return {
+      pieces.push({
         id,
         type: loadout.type,
         side: loadout.side,
@@ -352,8 +365,9 @@ export class AdventureRunController implements SceneController {
         attack: baseAttack,
         items: loadout.startingItems?.slice() ?? [],
         square: loadout.startingSquare as PieceState['square'],
-      };
+      });
     });
+
     // 캐릭터 패시브 중 turn-start healPerTurn 합산 (SPEC §5.6 트리거 분류).
     const turnStartHeal = character.passives
       .filter((p) => p.trigger === 'turn-start')
@@ -369,12 +383,40 @@ export class AdventureRunController implements SceneController {
     this.syncBoard(undefined, { instant: true });
   }
 
+  saveBoardPiecesToRun(): void {
+    if (!this.boardChess) return;
+    const boardPieces = this.boardChess.getPieces().filter((p) => p.side === 'w');
+    this.run = {
+      ...this.run,
+      pieces: this.run.pieces.map((original) => {
+        const bp = boardPieces.find((b) => b.id === original.id);
+        if (bp) {
+          return {
+            ...original,
+            hp: bp.hp,
+            maxHp: bp.maxHp,
+            attack: bp.attack,
+            items: bp.items.slice(),
+          };
+        }
+        // 보드에 없는 아군 기물은 캡처되어 제거된 것이므로 hp를 0으로 마킹 (사망 처리)
+        return {
+          ...original,
+          hp: 0,
+        };
+      }),
+    };
+    this.commit();
+  }
+
   /**
    * 보스 페이즈 전환 — SPEC §5.4 "플레이어 기물 HP/아이템 보존". 현재 boardChess의
    * 백 진영 스냅샷을 enterBoardNode로 넘겨 보드 위치만 새로 시작.
    */
   startNextBossPhase(): void {
     if (!this.boardChess) return;
+    // 다음 페이즈 전이 전에 기물 HP 상태를 런에 백업
+    this.saveBoardPiecesToRun();
     const playerPieces = this.boardChess.getPieces().filter((p) => p.side === 'w');
     this.enterBoardNode(playerPieces);
   }
@@ -469,6 +511,7 @@ export class AdventureRunController implements SceneController {
         return true;
       }
       if (blackKingHp <= 0) {
+        this.saveBoardPiecesToRun();
         setStatus({ kind: 'checkmate', winner: 'w' });
         return true;
       }
@@ -478,6 +521,9 @@ export class AdventureRunController implements SceneController {
       // chess.turn()이 체크메이트당한 진영(loser). winner는 그 반대.
       const loser = this.boardChess.turn();
       const winner: 'w' | 'b' = loser === 'w' ? 'b' : 'w';
+      if (winner === 'w') {
+        this.saveBoardPiecesToRun();
+      }
       setStatus({ kind: 'checkmate', winner });
       return true;
     }
@@ -504,7 +550,7 @@ export class AdventureRunController implements SceneController {
       const hp = loadout.baseStatsOverride?.hp ?? base.hp;
       const attack = loadout.baseStatsOverride?.attack ?? base.attack;
       return {
-        id: `p-${idx}-${loadout.side}-${loadout.type}-${loadout.startingSquare}`,
+        id: `${loadout.side === 'w' ? 'p' : 'e'}-${idx}-${loadout.side}-${loadout.type}-${loadout.startingSquare}`,
         type: loadout.type,
         side: loadout.side,
         hp: hp + (loadout.type === 'k' ? this.startHpBonus : 0),

@@ -94,6 +94,11 @@ export default function AdventureEvent() {
   }
 
   function leave() {
+    const k = king();
+    if (k && k.hp <= 0) {
+      navigate('/adventure/run/result?outcome=defeat');
+      return;
+    }
     activeRun()?.markCurrentNodeCompleted();
     navigate('/adventure/run/map');
   }

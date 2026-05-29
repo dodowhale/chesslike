@@ -1,4 +1,4 @@
-import { For, createMemo, onMount } from 'solid-js';
+import { For, createMemo, onMount, createSignal } from 'solid-js';
 import { useNavigate } from '@solidjs/router';
 import { Button } from '@/components/ui/Button';
 import { activeRun } from '@/store/adventureStore';
@@ -15,6 +15,7 @@ const RARITY_PRICES: Record<Item['rarity'], number> = {
 
 export default function AdventureShop() {
   const navigate = useNavigate();
+  const [boughtIds, setBoughtIds] = createSignal<string[]>([]);
 
   onMount(() => {
     if (!activeRun()) navigate('/adventure', { replace: true });
@@ -29,11 +30,13 @@ export default function AdventureShop() {
   function buy(item: Item) {
     const c = activeRun();
     if (!c) return;
+    if (boughtIds().includes(item.id)) return;
     const price = RARITY_PRICES[item.rarity];
     const gold = gameStore.adventure?.gold ?? 0;
     if (gold < price) return;
     c.addGold(-price);
     c.addInventory(item);
+    setBoughtIds([...boughtIds(), item.id]);
   }
 
   function leave() {
@@ -54,7 +57,8 @@ export default function AdventureShop() {
           <For each={stock()}>
             {(item) => {
               const price = RARITY_PRICES[item.rarity];
-              const canBuy = (gameStore.adventure?.gold ?? 0) >= price;
+              const isBought = () => boughtIds().includes(item.id);
+              const canBuy = (gameStore.adventure?.gold ?? 0) >= price && !isBought();
               return (
                 <div class="flex flex-col gap-2 p-3 border border-slate-700 rounded-lg bg-slate-900">
                   <div class="flex items-center justify-between">
@@ -63,11 +67,12 @@ export default function AdventureShop() {
                   </div>
                   <p class="text-xs text-slate-300 flex-1">{item.description}</p>
                   <Button
-                    variant={canBuy ? 'primary' : 'secondary'}
+                    variant={isBought() ? 'secondary' : canBuy ? 'primary' : 'secondary'}
                     onClick={() => buy(item)}
                     class="text-sm"
+                    disabled={isBought() || !canBuy}
                   >
-                    💰 {price} 구매
+                    {isBought() ? '품절' : `💰 ${price} 구매`}
                   </Button>
                 </div>
               );

@@ -42,6 +42,7 @@ export type CombatOutcome =
       capturedId: string;
       damage: number;
       move: MoveDescriptor;
+      attackerDied?: boolean;
     }
   | {
       kind: 'promoted';
@@ -179,6 +180,27 @@ export function createAdventureChessManager(opts: AdventureChessManagerOptions) 
     globalMods = mods;
   }
 
+  function getKingPenalty(type: AdventurePiece['type']): number {
+    switch (type) {
+      case 'p': return 2;
+      case 'n': return 5;
+      case 'b': return 5;
+      case 'r': return 8;
+      case 'q': return 12;
+      default: return 0;
+    }
+  }
+
+  function applyKingPenalty(penalty: number): void {
+    if (penalty <= 0) return;
+    for (const piece of piecesById.values()) {
+      if (piece.type === 'k' && piece.side === 'w') {
+        piece.hp = Math.max(0, piece.hp - penalty);
+        break;
+      }
+    }
+  }
+
   function tryMove(uci: string): AdventureMoveResult {
     if (uci.length < 4) {
       return { ok: false, reason: 'invalid-uci', outcome: { kind: 'noop' }, fen: chess.getFen() };
@@ -222,65 +244,64 @@ export function createAdventureChessManager(opts: AdventureChessManagerOptions) 
       return { ok: true, outcome: { kind: 'noop' }, fen: real.move.fen, lastMove: real.move };
     }
 
-    // 3. 데미지 계산
-    const damage = effectiveAttack(attacker, globalMods);
-    const remainingHp = defender.hp - damage;
-    // SPEC §4.2: 킹은 보드에서 캡처되지 않는다 (chess.js도 king 캡처를 합법수로
-    // 인정하지 않음). HP만 차감하고 attacker는 원위치. 일반 노드는 KingHp<=0이
-    // checkBoardEndCondition에서 즉시 종료로 이어지고, 보스 노드는 KingHp<=0이
-    // 종료 자리표가 아니므로 그대로 진행해 체크메이트로만 페이즈가 끝난다.
-    const defenderIsKing = defender.type === 'k';
-
-    // 피격(공격당한) 측의 반사 데미지 — defender 장착·글로벌 thornsDamage 합산.
-    // 본 사이클은 attacker가 반사로 죽지 않도록 hp를 최소 1로 clamp (상호 사망 처리는
-    // chess.js의 attacker 칸 비우기 우회가 필요해 후속).
-    const thornsToAttacker = effectiveThornsDamage(defender, globalMods);
-
-    if (defenderIsKing || remainingHp > 0) {
-      // 4a. 캡처 실패(또는 king) — defender HP만 감소, attacker 원위치.
-      // chess.js 무브를 적용하지 않으므로 active color가 그대로 남아 후속 차례가
-      // 멈춘다. swapTurnOnly로 차례만 넘긴다 (SPEC §5.1 "공격 시도 = 한 턴 소비").
-      const clampedRemaining = Math.max(0, remainingHp);
-      defender.hp = clampedRemaining;
-      if (thornsToAttacker > 0) {
-        attacker.hp = Math.max(1, attacker.hp - thornsToAttacker);
-      }
-      chess.swapTurnOnly();
-      return {
-        ok: true,
-        outcome: {
-          kind: 'damaged',
-          attackerId: attacker.id,
-          defenderId: defender.id,
-          damage,
-          defenderRemainingHp: clampedRemaining,
-          revert: true,
-        },
-        fen: chess.getFen(),
-      };
-    }
-
-    // 4b. 캡처 성공 — chess.js 무브 진짜로 적용
+    // 3. 캡처가 있는 경우 -> FIDE 룰대로 캡처는 100% 무조건 먼저 성공
     const real = chess.tryMove(uci);
     if (!real.ok) {
       return { ok: false, reason: real.reason, outcome: { kind: 'noop' }, fen: chess.getFen() };
     }
-    // capturedSquare에서 defender 제거 (앙파상은 capturedSquare !== to)
+
+    // 방어자 기물 제거
     piecesBySquare.delete(defender.square);
     piecesById.delete(defender.id);
-    if (thornsToAttacker > 0) {
-      attacker.hp = Math.max(1, attacker.hp - thornsToAttacker);
+
+    // 아군 기물이 캡처당했을 시 킹 HP 전가 패널티 적용
+    if (defender.side === 'w') {
+      applyKingPenalty(getKingPenalty(defender.type));
     }
-    relocatePiece(attacker, real.move.from, real.move.to);
-    if (real.move.promotion) applyPromotion(attacker, real.move.promotion);
+
+    // 공격자의 피해 정산 (반격 데미지 = 방어자 attack + thorns)
+    const attackerDamage = defender.attack + effectiveThornsDamage(defender, globalMods);
+    let attackerDied = false;
+
+    if (attackerDamage > 0) {
+      if (attacker.type === 'k') {
+        // 킹이 반격 피해를 입음
+        attacker.hp = Math.max(0, attacker.hp - attackerDamage);
+      } else {
+        // 일반 기물이 반격 피해를 입음
+        attacker.hp -= attackerDamage;
+        if (attacker.hp <= 0) {
+          attackerDied = true;
+          // 공격 기물 자멸 -> 보드 판에서 제거
+          chess.removePiece(real.move.to);
+          piecesBySquare.delete(real.move.to);
+          piecesById.delete(attacker.id);
+          
+          // 자멸한 기물이 아군이면 킹 HP 전가 패널티 적용
+          if (attacker.side === 'w') {
+            applyKingPenalty(getKingPenalty(attacker.type));
+          }
+        }
+      }
+    }
+
+    if (!attackerDied) {
+      // 공격 기물이 살아남았을 경우 위치 갱신 및 승급 체크
+      relocatePiece(attacker, real.move.from, real.move.to);
+      if (real.move.promotion) {
+        applyPromotion(attacker, real.move.promotion);
+      }
+    }
+
     return {
       ok: true,
       outcome: {
         kind: 'captured',
         attackerId: attacker.id,
         capturedId: defender.id,
-        damage,
+        damage: defender.attack,
         move: real.move,
+        attackerDied,
       },
       fen: real.move.fen,
       lastMove: real.move,

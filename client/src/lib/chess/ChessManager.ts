@@ -75,6 +75,7 @@ export interface ChessManager {
    * fullmove number는 흑→백 swap 시 +1.
    */
   swapTurnOnly(): { ok: true } | { ok: false; reason: string };
+  removePiece(square: Square): { ok: true } | { ok: false; reason: string };
 }
 
 interface ParsedUci {
@@ -350,5 +351,14 @@ export function createChessManager(initialFen: string = INITIAL_FEN): ChessManag
     toPgn,
     reset,
     swapTurnOnly,
+    removePiece: (square: Square) => {
+      try {
+        const removed = chess.remove(square);
+        if (!removed) return { ok: false, reason: 'no-piece' };
+        return { ok: true };
+      } catch (err) {
+        return { ok: false, reason: err instanceof Error ? err.message : 'error' };
+      }
+    },
   };
 }
