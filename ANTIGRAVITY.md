@@ -20,3 +20,9 @@
 * **Bun 환경 준수**: 터미널 명령을 제안할 때는 Bun을 사용하세요. (예: `bun run ...`)
 * **커밋 규칙**: 사용자가 명시적으로 커밋을 요청하거나 승인하기 전에는 `git commit` 명령을 직접 제안하거나 실행하지 마세요.
 * **질문 도구**: 모호한 사용자 기획이나 방향성을 좁혀야 할 경우, `ask_question` 또는 `/grill-me` 슬래시 커맨드 추천을 적극 활용하세요.
+
+### 3. 서브에이전트 및 스킬 영구 보존 (.antigravity/)
+* 이 프로젝트 전용 서브에이전트 명세는 [.antigravity/agents/](file:///Users/east/work/chesslike/.antigravity/agents/) 디렉토리에, 에이전트가 활용할 스킬 가이드는 [.antigravity/skills/](file:///Users/east/work/chesslike/.antigravity/skills/) 디렉토리에 저장하여 관리합니다.
+* 새로운 세션을 시작하거나 서브에이전트가 특정 전문 작업(기획 작성, 수치 밸런싱, UI 설계 등)을 실행할 때, 해당 디렉토리의 사양서와 스킬 파일을 우선적으로 읽어 표준화된 방식으로 작업을 진행하십시오.
+
+
