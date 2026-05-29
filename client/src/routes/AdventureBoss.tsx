@@ -12,6 +12,7 @@ import {
 } from '@/store/gameStore';
 import { rollBossReward } from '@/lib/adventure/data/items';
 import type { Square } from '@/lib/chess/ChessManager';
+import type { PieceState, AdventureChessManager } from '@/lib/chess/AdventureChessManager';
 
 /**
  * 모험 보스 노드 — 실제 보드 인터랙션 (M5 정식).
@@ -28,11 +29,119 @@ export default function AdventureBoss() {
   const [outcome, setOutcome] = createSignal<'victory' | 'defeat' | null>(null);
   const [abandonOpen, setAbandonOpen] = createSignal(false);
   const PHASE_COUNT = 2;
+  const [skillTargetMode, setSkillTargetMode] = createSignal(false);
 
   const run = () => gameStore.adventure;
   const currentNode = createMemo(() =>
     run()?.map.find((n) => n.id === run()?.currentNodeId),
   );
+
+  const selectedPiece = createMemo(() => {
+    const sel = boardSelected();
+    if (!sel) return undefined;
+    const c = activeRun();
+    const chess = c?.getBoardChess();
+    if (!c || !chess) return undefined;
+    return chess.getPieceAt(sel);
+  });
+
+  function getSkillTargets(attacker: PieceState, chess: AdventureChessManager): Square[] {
+    const targets: Square[] = [];
+    const files = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
+    const f1 = attacker.square.charCodeAt(0) - 97; // a=0, b=1...
+    const r1 = Number(attacker.square.charAt(1)) - 1; // 1-8 -> 0-7
+
+    if (attacker.type === 'n') {
+      const dests = chess.legalDestinations(attacker.square);
+      for (const d of dests) {
+        if (!chess.getPieceAt(d)) {
+          targets.push(d);
+        }
+      }
+    } else if (attacker.type === 'b') {
+      const dirs = [[1, 1], [1, -1], [-1, 1], [-1, -1]] as const;
+      for (const [df, dr] of dirs) {
+        let f = f1 + df;
+        let r = r1 + dr;
+        while (f >= 0 && f < 8 && r >= 0 && r < 8) {
+          const sq = `${files[f]}${r + 1}` as Square;
+          const p = chess.getPieceAt(sq);
+          if (p) {
+            if (p.side === attacker.side) {
+              targets.push(sq);
+            }
+            break;
+          }
+          f += df;
+          r += dr;
+        }
+      }
+    } else if (attacker.type === 'q') {
+      const dirs = [
+        [1, 0], [-1, 0], [0, 1], [0, -1],
+        [1, 1], [1, -1], [-1, 1], [-1, -1]
+      ] as const;
+      for (const [df, dr] of dirs) {
+        let f = f1 + df;
+        let r = r1 + dr;
+        while (f >= 0 && f < 8 && r >= 0 && r < 8) {
+          const sq = `${files[f]}${r + 1}` as Square;
+          const p = chess.getPieceAt(sq);
+          if (p) {
+            if (p.side !== attacker.side) {
+              const pullSquare = `${files[f1 + df]}${r1 + dr + 1}` as Square;
+              const pieceAtPull = chess.getPieceAt(pullSquare);
+              if (!pieceAtPull || pullSquare === sq) {
+                targets.push(sq);
+              }
+            }
+            break;
+          }
+          f += df;
+          r += dr;
+        }
+      }
+    }
+    return targets;
+  }
+
+  function getSkillDescription(type: string): string {
+    switch (type) {
+      case 'p': return '진격의 방패: 자신을 포함한 인접한 앞/좌/우 1칸 아군 기물에게 1턴간 피해 무효화(보호막) 부여 (쿨다운 5턴)';
+      case 'n': return '번개 돌진: 캡처 없이 나이트 행마 범위 내 빈 칸으로 이동하며, 도착지 주변 3x3 범위의 적 전체에 8 데미지 부여 (쿨다운 6턴)';
+      case 'b': return '성스러운 치유: 비숍의 이동 방향 대각선 상에 존재하는 아군 기물 1개의 HP를 20 회복 (쿨다운 4턴)';
+      case 'r': return '강철 방벽: 2턴간 받는 모든 피해 50% 감소 및 자신에게 공격을 가한 적에게 즉시 8 반격 데미지 반사 (쿨다운 7턴)';
+      case 'q': return '진공의 손길: 퀸의 가로/세로/대각선 사거리 선상에 위치한 적 기물 1개를 퀸의 앞 1칸으로 끌어당기고 10 데미지 부여 (대국당 1회, 쿨다운 8턴)';
+      case 'k': return '왕의 진노: 1턴간 보드 전체 아군 기물 ATK +5 부여 및 킹 인접 1칸 범위 모든 적에게 10 데미지 타격 (대국당 1회)';
+      default: return '';
+    }
+  }
+
+  function handleSkillButtonClick(piece: PieceState) {
+    const c = activeRun();
+    const chess = c?.getBoardChess();
+    if (!c || !chess) return;
+
+    if (piece.type === 'p' || piece.type === 'r' || piece.type === 'k') {
+      c.attemptActiveSkill(piece.id);
+      setBoardSelected(undefined);
+      setHighlights([]);
+      setAdventureSelection(undefined, []);
+      setSkillTargetMode(false);
+    } else {
+      if (skillTargetMode()) {
+        setSkillTargetMode(false);
+        const dests = chess.legalDestinations(piece.square);
+        setHighlights(dests);
+        setAdventureSelection(piece.square, dests);
+      } else {
+        setSkillTargetMode(true);
+        const targets = getSkillTargets(piece, chess);
+        setHighlights(targets);
+        setAdventureSelection(piece.square, targets);
+      }
+    }
+  }
 
   onMount(() => {
     const c = activeRun();
@@ -57,6 +166,21 @@ export default function AdventureBoss() {
     if (chess.turn() !== 'w') return;
 
     const selected = boardSelected();
+
+    if (skillTargetMode()) {
+      if (selected && highlights().includes(square)) {
+        const piece = chess.getPieceAt(selected);
+        if (piece) {
+          c.attemptActiveSkill(piece.id, square);
+        }
+      }
+      setBoardSelected(undefined);
+      setHighlights([]);
+      setAdventureSelection(undefined, []);
+      setSkillTargetMode(false);
+      return;
+    }
+
     if (selected && square === selected) {
       setBoardSelected(undefined);
       setHighlights([]);
@@ -176,6 +300,37 @@ export default function AdventureBoss() {
         <section class="flex flex-col items-center gap-3 w-full max-w-[480px]">
           <GameContainer />
         </section>
+        <Show when={selectedPiece() && selectedPiece()?.skill}>
+          {(() => {
+            const p = selectedPiece()!;
+            const sk = p.skill!;
+            const isCooldown = sk.currentCooldown > 0 || sk.hasUsedThisMatch;
+            const cooldownText = sk.hasUsedThisMatch ? '대국당 1회 제한 (사용함)' : sk.currentCooldown > 0 ? `${sk.currentCooldown}턴 대기` : '사용 가능';
+
+            return (
+              <div class="w-full max-w-[480px] bg-slate-900 border border-slate-800 rounded-lg p-3 flex flex-col gap-2">
+                <div class="flex items-center justify-between">
+                  <div class="flex flex-col">
+                    <span class="text-sm font-semibold text-amber-400">{sk.name}</span>
+                    <span class="text-xs text-slate-400">
+                      쿨다운: {sk.cooldownTurns}턴 | 상태: {cooldownText}
+                    </span>
+                  </div>
+                  <Button
+                    variant={skillTargetMode() ? 'secondary' : 'primary'}
+                    disabled={isCooldown || gameStore.ui.status.kind !== 'ongoing'}
+                    onClick={() => handleSkillButtonClick(p)}
+                  >
+                    {skillTargetMode() ? '선택 취소' : '스킬 사용'}
+                  </Button>
+                </div>
+                <p class="text-xs text-slate-300">
+                  {getSkillDescription(p.type)}
+                </p>
+              </div>
+            );
+          })()}
+        </Show>
         <Show when={outcome() !== null}>
           <Button onClick={returnToMap}>
             {outcome() === 'victory' ? '맵으로' : '결과 화면'}

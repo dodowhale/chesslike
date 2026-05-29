@@ -76,6 +76,7 @@ export interface ChessManager {
    */
   swapTurnOnly(): { ok: true } | { ok: false; reason: string };
   removePiece(square: Square): { ok: true } | { ok: false; reason: string };
+  putPiece(piece: { type: PieceSymbol; color: Color }, square: Square): { ok: true } | { ok: false; reason: string };
 }
 
 interface ParsedUci {
@@ -355,6 +356,15 @@ export function createChessManager(initialFen: string = INITIAL_FEN): ChessManag
       try {
         const removed = chess.remove(square);
         if (!removed) return { ok: false, reason: 'no-piece' };
+        return { ok: true };
+      } catch (err) {
+        return { ok: false, reason: err instanceof Error ? err.message : 'error' };
+      }
+    },
+    putPiece: (piece: { type: PieceSymbol; color: Color }, square: Square) => {
+      try {
+        const placed = chess.put(piece, square);
+        if (!placed) return { ok: false, reason: 'invalid-placement' };
         return { ok: true };
       } catch (err) {
         return { ok: false, reason: err instanceof Error ? err.message : 'error' };

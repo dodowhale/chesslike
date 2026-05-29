@@ -19,7 +19,7 @@ import {
   type AdventureMoveResult,
   type PieceState,
 } from '@/lib/chess/AdventureChessManager';
-import { toRichLastMove, type MoveDescriptor } from '@/lib/chess/ChessManager';
+import { toRichLastMove, type MoveDescriptor, type Square } from '@/lib/chess/ChessManager';
 import type { LastMove } from '@/lib/phaser/bridge/eventBus';
 import { persistRun } from '@/lib/adventure/runPersist';
 import {
@@ -33,6 +33,7 @@ import { INITIAL_FEN as STARTING_FEN } from '@shared/game';
 import type { SceneController } from './types';
 import { getCharacterById } from '@/lib/adventure/data/characters';
 import { settings } from '@/store/settingsStore';
+import { getEngine } from '@/lib/chess/StockfishEngine';
 
 /**
  * ADVENTURE.md §8.1 별의 조각 보상.
@@ -381,6 +382,17 @@ export class AdventureRunController implements SceneController {
     resetStatusOngoing();
     setInteractive(true);
     this.syncBoard(undefined, { instant: true });
+
+    void getEngine().init().then(() => {
+      getEngine().newGame();
+      getEngine().setOptions({
+        limitStrength: true,
+        uciElo: 800,
+        skillLevel: 1,
+      });
+    }).catch((err) => {
+      console.warn('Failed to init Stockfish for adventure:', err);
+    });
   }
 
   saveBoardPiecesToRun(): void {
@@ -448,20 +460,76 @@ export class AdventureRunController implements SceneController {
     return result;
   }
 
-  scheduleAiReply(): void {
+  /**
+   * 사용자가 기물의 액티브 스킬을 사용. 결과를 store에 반영하고 종료 조건을 검사.
+   */
+  attemptActiveSkill(pieceId: string, targetSquare?: Square): AdventureMoveResult | undefined {
+    if (!this.boardChess) return undefined;
+    const result = this.boardChess.useActiveSkill(pieceId, targetSquare);
+    if (!result.ok) return result;
+    this.syncBoard(undefined);
+    if (this.checkBoardEndCondition()) return result;
+    // 사용자 차례 끝 — AI 응답 지연
+    const delay = settings.accessibility.reducedMotion ? 0 : 250;
+    this.aiReplyTimer = setTimeout(() => {
+      this.aiReplyTimer = null;
+      this.scheduleAiReply();
+    }, delay);
+    return result;
+  }
+
+  async scheduleAiReply(): Promise<void> {
     if (!this.boardChess) return;
     if (this.boardChess.turn() !== 'b') return;
-    // 약한 random AI (M5 MVP). 후속에서 Stockfish 또는 보스 전용 AI로 교체.
+
+    const delay = settings.accessibility.reducedMotion ? 0 : 400;
+
+    const engine = getEngine();
+    if (engine.isReady()) {
+      try {
+        engine.position(this.boardChess.getFen());
+        const result = await engine.go({ movetime: 200 });
+        if (this.boardChess && this.boardChess.turn() === 'b') {
+          if (result.bestmove && result.bestmove !== '(none)' && result.bestmove.length >= 4) {
+            this.aiReplyTimer = setTimeout(() => {
+              this.aiReplyTimer = null;
+              if (!this.boardChess) return;
+              const moveResult = this.boardChess.tryMove(result.bestmove);
+              if (moveResult.ok) {
+                this.syncBoard(moveResult.lastMove);
+                this.checkBoardEndCondition();
+              } else {
+                this.fallbackRandomMove();
+              }
+            }, delay);
+            return;
+          }
+        }
+      } catch (err) {
+        console.error('Adventure Stockfish go failed, fallback to random:', err);
+      }
+    }
+
+    this.fallbackRandomMove();
+  }
+
+  private fallbackRandomMove(): void {
+    if (!this.boardChess) return;
     const legalUcis = this.collectLegalUcis('b');
     if (legalUcis.length === 0) {
       this.checkBoardEndCondition();
       return;
     }
     const pick = legalUcis[Math.floor(Math.random() * legalUcis.length)]!;
-    const result = this.boardChess.tryMove(pick);
-    if (!result.ok) return;
-    this.syncBoard(result.lastMove);
-    this.checkBoardEndCondition();
+    const delay = settings.accessibility.reducedMotion ? 0 : 400;
+    this.aiReplyTimer = setTimeout(() => {
+      this.aiReplyTimer = null;
+      if (!this.boardChess) return;
+      const result = this.boardChess.tryMove(pick);
+      if (!result.ok) return;
+      this.syncBoard(result.lastMove);
+      this.checkBoardEndCondition();
+    }, delay);
   }
 
   private collectLegalUcis(_color: 'w' | 'b'): string[] {

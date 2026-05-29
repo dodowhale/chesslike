@@ -20,9 +20,23 @@ import {
  * 본 모듈은 도메인 로직만 제공하고, "패배/승리 전이"는 컨트롤러가 결정한다.
  */
 
+export interface PieceSkill {
+  name: string;
+  cooldownTurns: number;
+  currentCooldown: number;
+  hasUsedThisMatch: boolean;
+}
+
 export interface PieceState extends AdventurePiece {
   /** chess.js 좌표 (a8..h1). 무브 후 갱신된다. */
   square: Square;
+  shieldTurns?: number;
+  mitigationTurns?: number;
+  thornsReflectTurns?: number;
+  poisonTurns?: number;
+  poisonDamage?: number;
+  tempAtkBonus?: number;
+  skill?: PieceSkill;
 }
 
 export type CombatOutcome =
@@ -67,19 +81,55 @@ export interface AdventureChessManagerOptions {
   turnStartHeal?: number;
 }
 
+interface SynergyCheckResult {
+  hasIronKnight: boolean;
+  hasArcaneSage: boolean;
+  hasViper: boolean;
+  hasSunShield: boolean;
+}
+
+export function getSetSynergyIds(piece: AdventurePiece): SynergyCheckResult {
+  if (piece.items.length < 2) {
+    return { hasIronKnight: false, hasArcaneSage: false, hasViper: false, hasSunShield: false };
+  }
+  const ids = new Set(piece.items.map((i) => i.id));
+  return {
+    hasIronKnight: ids.has('iron-shield') && (ids.has('leather-armor') || ids.has('aegis-plate') || ids.has('dragon-scale')),
+    hasArcaneSage: ids.has('oak-staff') && ids.has('runic-gauntlet'),
+    hasViper: ids.has('sharp-blade') && ids.has('serpent-fang'),
+    hasSunShield: ids.has('sturdy-cloak') && ids.has('sunforged-blade'),
+  };
+}
+
+function getSynergyModifier(piece: AdventurePiece): Modifier {
+  const syn = getSetSynergyIds(piece);
+  const mod: Modifier = {};
+  if (syn.hasIronKnight) {
+    mod.hp = 15;
+    mod.thornsDamage = 4;
+  }
+  if (syn.hasSunShield) {
+    mod.attack = 2;
+  }
+  return mod;
+}
+
 function effectiveAttack(piece: AdventurePiece, globalMods: Modifier[]): number {
   const itemBonus = piece.items.reduce((acc, item) => acc + (item.modifier.attack ?? 0), 0);
   const globalBonus = globalMods.reduce((acc, mod) => acc + (mod.attack ?? 0), 0);
-  return Math.max(0, piece.attack + itemBonus + globalBonus);
+  const synergyBonus = getSynergyModifier(piece).attack ?? 0;
+  const tempBonus = (piece as PieceState).tempAtkBonus ?? 0;
+  return Math.max(0, piece.attack + itemBonus + globalBonus + synergyBonus + tempBonus);
 }
 
 function effectiveMaxHp(piece: AdventurePiece, globalMods: Modifier[]): number {
   const itemBonus = piece.items.reduce((acc, item) => acc + (item.modifier.hp ?? 0), 0);
   const globalBonus = globalMods.reduce((acc, mod) => acc + (mod.hp ?? 0), 0);
-  return Math.max(1, piece.maxHp + itemBonus + globalBonus);
+  const synergyBonus = getSynergyModifier(piece).hp ?? 0;
+  return Math.max(1, piece.maxHp + itemBonus + globalBonus + synergyBonus);
 }
 
-/** 피격 시 attacker에게 되돌려주는 반사 데미지 — 장착 + 글로벌 합산. */
+/** 피격 시 attacker에게 되돌려주는 반사 데미지 — 장착 + 글로벌 + 시너지 + 버프 합산. */
 function effectiveThornsDamage(piece: AdventurePiece, globalMods: Modifier[]): number {
   const itemBonus = piece.items.reduce(
     (acc, item) => acc + (item.modifier.thornsDamage ?? 0),
@@ -89,7 +139,9 @@ function effectiveThornsDamage(piece: AdventurePiece, globalMods: Modifier[]): n
     (acc, mod) => acc + (mod.thornsDamage ?? 0),
     0,
   );
-  return Math.max(0, itemBonus + globalBonus);
+  const synergyBonus = getSynergyModifier(piece).thornsDamage ?? 0;
+  const reflectBonus = (piece as PieceState).thornsReflectTurns && ((piece as PieceState).thornsReflectTurns ?? 0) > 0 ? 8 : 0;
+  return Math.max(0, itemBonus + globalBonus + synergyBonus + reflectBonus);
 }
 
 /** turn-start 시 piece 1개에 적용되는 healPerTurn — 아이템 + 글로벌 합산. */
@@ -126,6 +178,17 @@ function basePieceStats(type: AdventurePiece['type']): { hp: number; attack: num
   }
 }
 
+function initPieceSkill(type: AdventurePiece['type']): PieceSkill | undefined {
+  switch (type) {
+    case 'p': return { name: '진격의 방패', cooldownTurns: 5, currentCooldown: 0, hasUsedThisMatch: false };
+    case 'n': return { name: '번개 돌진', cooldownTurns: 6, currentCooldown: 0, hasUsedThisMatch: false };
+    case 'b': return { name: '성스러운 치유', cooldownTurns: 4, currentCooldown: 0, hasUsedThisMatch: false };
+    case 'r': return { name: '강철 방벽', cooldownTurns: 7, currentCooldown: 0, hasUsedThisMatch: false };
+    case 'q': return { name: '진공의 손길', cooldownTurns: 8, currentCooldown: 0, hasUsedThisMatch: false };
+    case 'k': return { name: '왕의 진노', cooldownTurns: 99, currentCooldown: 0, hasUsedThisMatch: false };
+  }
+}
+
 export function createAdventureChessManager(opts: AdventureChessManagerOptions) {
   const chess: ChessManager = createChessManager(opts.initialFen);
   const piecesBySquare = new Map<Square, PieceState>();
@@ -134,23 +197,104 @@ export function createAdventureChessManager(opts: AdventureChessManagerOptions) 
   const turnStartHeal = opts.turnStartHeal ?? 0;
 
   for (const piece of opts.pieces) {
+    if (!piece.skill) {
+      piece.skill = initPieceSkill(piece.type);
+    }
     piecesBySquare.set(piece.square, piece);
     piecesById.set(piece.id, piece);
   }
 
-  // 멱등성 보장: 같은 차례에 두 번 호출되어도 한 번만 힐.
+  // 멱등성 보장: 같은 차례에 두 번 호출되어도 한 번만 발화.
   let lastHealedKey = '';
 
+  function getKingPenalty(type: AdventurePiece['type']): number {
+    switch (type) {
+      case 'p': return 2;
+      case 'n': return 5;
+      case 'b': return 5;
+      case 'r': return 8;
+      case 'q': return 12;
+      default: return 0;
+    }
+  }
+
+  function applyKingPenalty(penalty: number): void {
+    if (penalty <= 0) return;
+    for (const piece of piecesById.values()) {
+      if (piece.type === 'k' && piece.side === 'w') {
+        piece.hp = Math.max(0, piece.hp - penalty);
+        break;
+      }
+    }
+  }
+
+  function calculateMitigatedDamage(victim: PieceState, rawDamage: number): void {
+    if (rawDamage <= 0) return;
+    
+    // 폰 '진격의 방패' (피해 무효화 보호막)
+    if (victim.shieldTurns && victim.shieldTurns > 0) {
+      victim.shieldTurns = 0; // 방패 소모
+      return;
+    }
+
+    let finalDamage = rawDamage;
+    // 룩 '강철 방벽' (피해 50% 경감)
+    if (victim.mitigationTurns && victim.mitigationTurns > 0) {
+      finalDamage = Math.ceil(rawDamage * 0.5);
+    }
+
+    victim.hp = Math.max(0, victim.hp - finalDamage);
+  }
+
   /**
-   * SPEC §5.6 트리거 발화 — 매 턴 시작 시 healPerTurn.
-   * - 캐릭터 패시브 healPerTurn(opts.turnStartHeal) — 자기 진영 모든 piece에 동일 적용.
-   * - 아이템·글로벌 modifier healPerTurn — 장착·범위에 따라 piece별 차등 적용.
+   * SPEC §5.6 트리거 발화 — 매 턴 시작 시 버프/디버프 및 healPerTurn 적용.
    */
   function applyTurnStartHeal(side: 'w' | 'b'): void {
-    // 차례 진영 + chess.js 무브 수 조합으로 멱등 키.
     const key = `${side}:${chess.moves().length}`;
     if (lastHealedKey === key) return;
     lastHealedKey = key;
+
+    // 1. 해당 진영 기물들의 스킬 쿨다운 감소
+    for (const piece of piecesById.values()) {
+      if (piece.side === side && piece.skill) {
+        piece.skill.currentCooldown = Math.max(0, piece.skill.currentCooldown - 1);
+      }
+    }
+
+    // 2. 맹독(Poison) 피해 정산 및 기물 제거
+    for (const piece of piecesById.values()) {
+      if (piece.side === side && piece.poisonTurns && piece.poisonTurns > 0) {
+        const pDamage = piece.poisonDamage ?? 3;
+        piece.hp = Math.max(0, piece.hp - pDamage);
+        piece.poisonTurns -= 1;
+        
+        if (piece.hp <= 0) {
+          chess.removePiece(piece.square);
+          piecesBySquare.delete(piece.square);
+          piecesById.delete(piece.id);
+          
+          if (piece.side === 'w') {
+            applyKingPenalty(getKingPenalty(piece.type));
+          }
+        }
+      }
+    }
+
+    // 3. 기물들의 버프 턴수 및 임시 스탯 버프 해제
+    for (const piece of piecesById.values()) {
+      if (piece.side === side) {
+        if (piece.shieldTurns && piece.shieldTurns > 0) piece.shieldTurns -= 1;
+        if (piece.mitigationTurns && piece.mitigationTurns > 0) piece.mitigationTurns -= 1;
+        if (piece.thornsReflectTurns && piece.thornsReflectTurns > 0) piece.thornsReflectTurns -= 1;
+        
+        // 킹 왕의 진노 ATK 버프 해제
+        if (piece.tempAtkBonus) {
+          delete piece.tempAtkBonus;
+        }
+      }
+    }
+
+    // 4. 턴 회복 힐 적용
     for (const piece of piecesById.values()) {
       if (piece.side !== side) continue;
       const itemHeal = effectivePieceHealPerTurn(piece, globalMods);
@@ -178,27 +322,6 @@ export function createAdventureChessManager(opts: AdventureChessManagerOptions) 
 
   function setGlobalModifiers(mods: Modifier[]): void {
     globalMods = mods;
-  }
-
-  function getKingPenalty(type: AdventurePiece['type']): number {
-    switch (type) {
-      case 'p': return 2;
-      case 'n': return 5;
-      case 'b': return 5;
-      case 'r': return 8;
-      case 'q': return 12;
-      default: return 0;
-    }
-  }
-
-  function applyKingPenalty(penalty: number): void {
-    if (penalty <= 0) return;
-    for (const piece of piecesById.values()) {
-      if (piece.type === 'k' && piece.side === 'w') {
-        piece.hp = Math.max(0, piece.hp - penalty);
-        break;
-      }
-    }
   }
 
   function tryMove(uci: string): AdventureMoveResult {
@@ -259,17 +382,29 @@ export function createAdventureChessManager(opts: AdventureChessManagerOptions) 
       applyKingPenalty(getKingPenalty(defender.type));
     }
 
+    // 태양의 가호 세트 시너지 감지: sturdy-cloak + sunforged-blade 장착 시 아군 킹 8 힐, 장착 기물 ATK +2 영구 누적
+    const synIds = getSetSynergyIds(attacker);
+    if (synIds.hasSunShield) {
+      attacker.attack += 2;
+      for (const p of piecesById.values()) {
+        if (p.type === 'k' && p.side === 'w') {
+          p.hp = Math.min(p.maxHp, p.hp + 8);
+          break;
+        }
+      }
+    }
+
     // 공격자의 피해 정산 (반격 데미지 = 방어자 attack + thorns)
     const attackerDamage = defender.attack + effectiveThornsDamage(defender, globalMods);
     let attackerDied = false;
 
     if (attackerDamage > 0) {
       if (attacker.type === 'k') {
-        // 킹이 반격 피해를 입음
-        attacker.hp = Math.max(0, attacker.hp - attackerDamage);
+        // 킹이 반격 피해를 입음 (경감 적용)
+        calculateMitigatedDamage(attacker, attackerDamage);
       } else {
-        // 일반 기물이 반격 피해를 입음
-        attacker.hp -= attackerDamage;
+        // 일반 기물이 반격 피해를 입음 (경감 적용)
+        calculateMitigatedDamage(attacker, attackerDamage);
         if (attacker.hp <= 0) {
           attackerDied = true;
           // 공격 기물 자멸 -> 보드 판에서 제거
@@ -324,6 +459,264 @@ export function createAdventureChessManager(opts: AdventureChessManagerOptions) 
     // 슬롯 아이템(piece.items)은 유지 — SPEC §5.3 슬롯 보존
   }
 
+  function useActiveSkill(pieceId: string, targetSquare?: Square): AdventureMoveResult {
+    const attacker = piecesById.get(pieceId);
+    if (!attacker || !attacker.skill) {
+      return { ok: false, reason: 'no-piece-or-skill', outcome: { kind: 'noop' }, fen: chess.getFen() };
+    }
+    if (attacker.side !== chess.turn()) {
+      return { ok: false, reason: 'not-your-turn', outcome: { kind: 'noop' }, fen: chess.getFen() };
+    }
+    if (attacker.skill.currentCooldown > 0 || attacker.skill.hasUsedThisMatch) {
+      return { ok: false, reason: 'skill-on-cooldown', outcome: { kind: 'noop' }, fen: chess.getFen() };
+    }
+
+    applyTurnStartHeal(chess.turn());
+
+    const hasArcaneSage = getSetSynergyIds(attacker).hasArcaneSage;
+    const cooldownPenalty = hasArcaneSage ? 1 : 0;
+    const effectMultiplier = hasArcaneSage ? 1.3 : 1.0;
+
+    let skillUsed = false;
+
+    switch (attacker.type) {
+      case 'p': {
+        const files = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
+        const fileIdx = files.indexOf(attacker.square.charAt(0));
+        const rank = Number(attacker.square.charAt(1));
+        const forwardRank = attacker.side === 'w' ? rank + 1 : rank - 1;
+        
+        const targets: Square[] = [attacker.square];
+        if (forwardRank >= 1 && forwardRank <= 8) {
+          targets.push(`${files[fileIdx]}${forwardRank}` as Square);
+        }
+        if (fileIdx > 0) {
+          targets.push(`${files[fileIdx - 1]}${rank}` as Square);
+        }
+        if (fileIdx < 7) {
+          targets.push(`${files[fileIdx + 1]}${rank}` as Square);
+        }
+
+        targets.forEach((sq) => {
+          const piece = piecesBySquare.get(sq);
+          if (piece && piece.side === attacker.side) {
+            piece.shieldTurns = 1;
+          }
+        });
+        skillUsed = true;
+        break;
+      }
+      case 'n': {
+        if (!targetSquare) {
+          return { ok: false, reason: 'target-required', outcome: { kind: 'noop' }, fen: chess.getFen() };
+        }
+        const dests = chess.legalDestinations(attacker.square);
+        if (!dests.includes(targetSquare) || piecesBySquare.has(targetSquare)) {
+          return { ok: false, reason: 'invalid-target-square', outcome: { kind: 'noop' }, fen: chess.getFen() };
+        }
+
+        const targetDmg = Math.round(8 * effectMultiplier);
+        const uci = `${attacker.square}${targetSquare}`;
+        const real = chess.tryMove(uci);
+        if (!real.ok) {
+          return { ok: false, reason: 'illegal-move', outcome: { kind: 'noop' }, fen: chess.getFen() };
+        }
+
+        relocatePiece(attacker, real.move.from, real.move.to);
+
+        const files = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
+        const fileIdx = files.indexOf(targetSquare.charAt(0));
+        const rank = Number(targetSquare.charAt(1));
+
+        for (let df = -1; df <= 1; df++) {
+          for (let dr = -1; dr <= 1; dr++) {
+            const f = fileIdx + df;
+            const r = rank + dr;
+            if (f >= 0 && f < 8 && r >= 1 && r <= 8) {
+              const sq = `${files[f]}${r}` as Square;
+              const enemy = piecesBySquare.get(sq);
+              if (enemy && enemy.side !== attacker.side) {
+                const hasViper = getSetSynergyIds(attacker).hasViper;
+                if (hasViper) {
+                  enemy.poisonTurns = 3;
+                  enemy.poisonDamage = 3;
+                }
+
+                calculateMitigatedDamage(enemy, targetDmg);
+                if (enemy.hp <= 0) {
+                  chess.removePiece(sq);
+                  piecesBySquare.delete(sq);
+                  piecesById.delete(enemy.id);
+                  if (enemy.side === 'w') {
+                    applyKingPenalty(getKingPenalty(enemy.type));
+                  }
+                }
+              }
+            }
+          }
+        }
+        
+        skillUsed = true;
+        break;
+      }
+      case 'b': {
+        if (!targetSquare) {
+          return { ok: false, reason: 'target-required', outcome: { kind: 'noop' }, fen: chess.getFen() };
+        }
+        const targetPiece = piecesBySquare.get(targetSquare);
+        if (!targetPiece || targetPiece.side !== attacker.side) {
+          return { ok: false, reason: 'invalid-ally-target', outcome: { kind: 'noop' }, fen: chess.getFen() };
+        }
+        const f1 = attacker.square.charCodeAt(0);
+        const r1 = attacker.square.charCodeAt(1);
+        const f2 = targetSquare.charCodeAt(0);
+        const r2 = targetSquare.charCodeAt(1);
+        if (Math.abs(f1 - f2) !== Math.abs(r1 - r2)) {
+          return { ok: false, reason: 'not-diagonal-path', outcome: { kind: 'noop' }, fen: chess.getFen() };
+        }
+
+        const healAmount = Math.round(20 * effectMultiplier);
+        targetPiece.hp = Math.min(targetPiece.maxHp, targetPiece.hp + healAmount);
+        
+        skillUsed = true;
+        break;
+      }
+      case 'r': {
+        attacker.mitigationTurns = 2;
+        attacker.thornsReflectTurns = 2;
+        skillUsed = true;
+        break;
+      }
+      case 'q': {
+        if (!targetSquare) {
+          return { ok: false, reason: 'target-required', outcome: { kind: 'noop' }, fen: chess.getFen() };
+        }
+        const enemy = piecesBySquare.get(targetSquare);
+        if (!enemy || enemy.side === attacker.side) {
+          return { ok: false, reason: 'invalid-enemy-target', outcome: { kind: 'noop' }, fen: chess.getFen() };
+        }
+        const f1 = attacker.square.charCodeAt(0);
+        const r1 = attacker.square.charCodeAt(1);
+        const f2 = targetSquare.charCodeAt(0);
+        const r2 = targetSquare.charCodeAt(1);
+        const isOrthogonal = f1 === f2 || r1 === r2;
+        const isDiagonal = Math.abs(f1 - f2) === Math.abs(r1 - r2);
+        if (!isOrthogonal && !isDiagonal) {
+          return { ok: false, reason: 'not-straight-path', outcome: { kind: 'noop' }, fen: chess.getFen() };
+        }
+
+        const files = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
+        const f1Idx = files.indexOf(attacker.square.charAt(0));
+        const r1Num = Number(attacker.square.charAt(1));
+        const f2Idx = files.indexOf(targetSquare.charAt(0));
+        const r2Num = Number(targetSquare.charAt(1));
+        
+        const df = Math.sign(f2Idx - f1Idx);
+        const dr = Math.sign(r2Num - r1Num);
+        
+        const pullSquare = `${files[f1Idx + df]}${r1Num + dr}` as Square;
+        
+        if (piecesBySquare.has(pullSquare) && pullSquare !== targetSquare) {
+          return { ok: false, reason: 'pull-path-blocked', outcome: { kind: 'noop' }, fen: chess.getFen() };
+        }
+
+        const removed = chess.removePiece(targetSquare);
+        if (!removed.ok) return { ok: false, reason: 'cannot-pull-piece', outcome: { kind: 'noop' }, fen: chess.getFen() };
+        
+        const placed = chess.putPiece({ type: enemy.type, color: enemy.side }, pullSquare);
+        if (!placed.ok) return { ok: false, reason: 'cannot-place-pulled-piece', outcome: { kind: 'noop' }, fen: chess.getFen() };
+
+        piecesBySquare.delete(enemy.square);
+        enemy.square = pullSquare;
+        piecesBySquare.set(pullSquare, enemy);
+
+        const dmg = Math.round(10 * effectMultiplier);
+        
+        const hasViper = getSetSynergyIds(attacker).hasViper;
+        if (hasViper) {
+          enemy.poisonTurns = 3;
+          enemy.poisonDamage = 3;
+        }
+
+        calculateMitigatedDamage(enemy, dmg);
+        if (enemy.hp <= 0) {
+          chess.removePiece(pullSquare);
+          piecesBySquare.delete(pullSquare);
+          piecesById.delete(enemy.id);
+          if (enemy.side === 'w') {
+            applyKingPenalty(getKingPenalty(enemy.type));
+          }
+        }
+
+        skillUsed = true;
+        break;
+      }
+      case 'k': {
+        const files = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
+        const fileIdx = files.indexOf(attacker.square.charAt(0));
+        const rank = Number(attacker.square.charAt(1));
+
+        const dmg = Math.round(10 * effectMultiplier);
+
+        for (let df = -1; df <= 1; df++) {
+          for (let dr = -1; dr <= 1; dr++) {
+            if (df === 0 && dr === 0) continue;
+            const f = fileIdx + df;
+            const r = rank + dr;
+            if (f >= 0 && f < 8 && r >= 1 && r <= 8) {
+              const sq = `${files[f]}${r}` as Square;
+              const enemy = piecesBySquare.get(sq);
+              if (enemy && enemy.side !== attacker.side) {
+                const hasViper = getSetSynergyIds(attacker).hasViper;
+                if (hasViper) {
+                  enemy.poisonTurns = 3;
+                  enemy.poisonDamage = 3;
+                }
+                
+                calculateMitigatedDamage(enemy, dmg);
+                if (enemy.hp <= 0) {
+                  chess.removePiece(sq);
+                  piecesBySquare.delete(sq);
+                  piecesById.delete(enemy.id);
+                  if (enemy.side === 'w') {
+                    applyKingPenalty(getKingPenalty(enemy.type));
+                  }
+                }
+              }
+            }
+          }
+        }
+
+        for (const p of piecesById.values()) {
+          if (p.side === attacker.side) {
+            p.tempAtkBonus = 5;
+          }
+        }
+
+        skillUsed = true;
+        break;
+      }
+    }
+
+    if (skillUsed) {
+      attacker.skill.currentCooldown = Math.max(0, attacker.skill.cooldownTurns - cooldownPenalty);
+      if (attacker.type === 'q' || attacker.type === 'k') {
+        attacker.skill.hasUsedThisMatch = true;
+      }
+      chess.swapTurnOnly();
+
+      return {
+        ok: true,
+        outcome: {
+          kind: 'noop',
+        },
+        fen: chess.getFen(),
+      };
+    }
+
+    return { ok: false, reason: 'unknown-error', outcome: { kind: 'noop' }, fen: chess.getFen() };
+  }
+
   return {
     chess,
     getFen: () => chess.getFen(),
@@ -334,6 +727,7 @@ export function createAdventureChessManager(opts: AdventureChessManagerOptions) 
     getKingHp,
     setGlobalModifiers,
     tryMove,
+    useActiveSkill,
     isStalemate: () => chess.evaluateNaturalStatus().kind === 'stalemate',
     isCheckmate: () => chess.evaluateNaturalStatus().kind === 'checkmate',
     isInCheck: () => chess.isInCheck(),

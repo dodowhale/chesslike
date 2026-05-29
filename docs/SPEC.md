@@ -104,6 +104,13 @@ interface PieceLoadout {
   startingItems?: Item[];
 }
 
+interface PieceSkill {
+  name: string;
+  cooldownTurns: number;
+  currentCooldown: number;
+  hasUsedThisMatch: boolean;
+}
+
 interface Piece {
   id: string;
   type: 'p' | 'n' | 'b' | 'r' | 'q' | 'k';
@@ -112,6 +119,7 @@ interface Piece {
   maxHp: number;
   attack: number;
   items: Item[];            // 최대 2슬롯
+  skill?: PieceSkill;       // 기물 고유 액티브 스킬 상태
 }
 
 interface Passive {
@@ -300,10 +308,23 @@ export type CharacterId = 'standard' | 'assassins' | 'saints';
 - 이를 위해 `ClockManager`에서 시간 만료 이벤트 수신 시, 보드 FEN을 파싱하여 상대 기물 구성을 평가한 후 무승부 여부를 판별한다.
 
 
-### 5.6 캐릭터 패시브 트리거
+### 5.7 캐릭터 패시브 트리거
 
 - 트리거 시점에 따라 매 턴(`turn-start`/`turn-end`), 캡처 시(`on-capture`/`on-captured`), 캐슬링 시(`on-castle`), 항상 적용(`always`)으로 분류.
 - 여러 패시브가 동시에 트리거될 경우 캐릭터 정의 순서대로 적용.
+
+### 5.8 아이템 세트 시너지 명세
+
+- 기물의 스탯 및 버프 계산 모듈(`effectiveAttack`, `effectiveMaxHp` 등)에서 기물이 장착 중인 `items` 배열(최대 2개)의 구성을 스캔하여 세트 시너지 충족 여부를 판정한다.
+- 감지된 세트 효과에 해당하는 Modifier 수치가 런타임에 최종 스탯에 가산되어 실시간으로 반영된다.
+
+### 5.9 기물 고유 액티브 스킬 작동 사양
+
+- **쿨다운 관리**: 각 기물의 `PieceSkill.currentCooldown`은 매 턴 교대(`swapTurnOnly` 혹은 턴 종료) 마이크로태스크가 실행될 때마다 `currentCooldown = Math.max(0, currentCooldown - 1)` 공식을 통해 1씩 차감된다.
+- **스킬 발동 및 턴 종료**:
+  - 플레이어가 UI 상에서 특정 기물의 액티브 스킬을 발동하면, 스킬 효과(피해, 보호막, 치유 등)를 보드 위 타겟에 즉시 가해 HP/버프 상태를 갱신한다.
+  - 효과 적용이 성공한 직후, `chess.swapTurnOnly()`를 호출하여 스킬 기물의 차례를 강제 소모시키고 상대방에게 턴을 넘긴다.
+  - 사용한 스킬은 `currentCooldown = cooldownTurns`로 쿨다운이 채워지거나 `hasUsedThisMatch = true`로 대국 중 사용 불가가 마킹된다.
 
 ## 6. Storage & Persistence
 
