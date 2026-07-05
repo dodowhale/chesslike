@@ -265,28 +265,35 @@ export default function AdventureBattle() {
 
   // 헤더의 킹 HP는 store 보드 hp 채널에서 직접 가져와 stale 방지
   const playerKingHp = () => {
-    const hps = gameStore.ui.adventurePieceHps;
-    if (!hps) return 0;
-    // 진영 w 킹의 square를 찾아야 하지만 단순화: 가장 큰 maxHp가 킹.
-    let best = 0;
-    for (const h of hps) {
-      if (h.maxHp >= 30) best = Math.max(best, h.hp);
+    const c = activeRun();
+    const chess = c?.getBoardChess();
+    if (chess) {
+      return chess.getKingHp('w');
     }
-    return best;
+    return run()?.pieces.find((p) => p.side === 'w' && p.type === 'k')?.hp ?? 0;
   };
 
   return (
-    <div class="min-h-screen flex flex-col">
-      <header class="flex items-center justify-between px-4 py-3 border-b border-slate-800">
+    <div class="min-h-screen flex flex-col relative overflow-hidden">
+      <div
+        class="absolute inset-0 z-0 pointer-events-none opacity-15"
+        style={{
+          "background-image": `url('/assets/adventure/backgrounds/act${gameStore.adventure?.act ?? 1}.png')`,
+          "background-size": "cover",
+          "background-position": "center",
+          "image-rendering": "pixelated"
+        }}
+      />
+      <header class="flex items-center justify-between px-4 py-3 border-b border-slate-800 z-10 bg-slate-950/85 backdrop-blur-sm w-full">
         <Button variant="ghost" onClick={onBackButton}>
           ← {outcome() === null ? '전투 포기' : '맵으로'}
         </Button>
         <span class="font-semibold">
-          {currentNode()?.type === 'elite' ? '⚔ 엘리트' : '⚔ 전투'}
+          ⚔ {currentNode()?.type === 'elite' ? '엘리트 전투' : '전투'}
         </span>
         <span class="text-xs text-slate-400">킹 HP {playerKingHp()}</span>
       </header>
-      <main class="flex-1 flex flex-col items-center justify-center gap-3 p-4">
+      <main class="flex-1 flex flex-col items-center justify-center gap-3 p-4 z-10 w-full">
         <Show when={outcome() === 'victory'}>
           <div class="text-emerald-300 text-sm">🏆 승리 — 보상이 인벤토리에 추가되었습니다.</div>
         </Show>

@@ -79,6 +79,13 @@ export interface I18nDict {
     legendaries: string;
     shopPurchases: string;
     back: string;
+    leaderboardTitle: string;
+    rank: string;
+    nickname: string;
+    character: string;
+    progress: string;
+    score: string;
+    noLeaderboard: string;
   };
   help: {
     title: string;
@@ -179,6 +186,13 @@ export const ko: I18nDict = {
     legendaries: '획득한 Legendary',
     shopPurchases: '상점 통과 수',
     back: '메인 메뉴',
+    leaderboardTitle: '글로벌 리더보드',
+    rank: '순위',
+    nickname: '닉네임',
+    character: '캐릭터',
+    progress: '달성 막',
+    score: '완료 노드',
+    noLeaderboard: '등록된 랭킹 데이터가 없습니다.',
   },
   help: {
     title: '도움말',

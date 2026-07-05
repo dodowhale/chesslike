@@ -11,9 +11,8 @@ import {
  * 모험 모드 전용 전투 매니저.
  *
  * SPEC §5.1~5.5의 동작을 캡슐화한다:
- * - 캡처 시도 시 데미지 = attacker.attack; defender.hp <= 0이면 캡처 진행, 그렇지
- *   않으면 attacker 원위치 + defender HP만 감소.
- * - 앙파상: 스쳐 지나간 폰의 실제 위치를 추적해 HP 차감.
+ * - 결사의 캡처: FIDE 룰대로 캡처는 100% 무조건 먼저 성공하고, 성공 직후 attacker는 defender의 ATK 및 thornsDamage만큼 반격 피해를 입으며, HP 0 이하 시 양방향 소멸 처리.
+ * - 앙파상: 스쳐 지나간 폰의 실제 위치를 추적해 HP 차감 및 반격 피해 적용.
  * - 폰 승급: 잔여 HP 무관하게 베이스 스탯 갱신, 슬롯 아이템은 유지.
  * - 스테일메이트: 일반 노드는 패배, 보스 노드는 양측 진행 불가 시 따로 처리.
  *
@@ -36,6 +35,7 @@ export interface PieceState extends AdventurePiece {
   poisonTurns?: number;
   poisonDamage?: number;
   tempAtkBonus?: number;
+  tempAtkBonusTurns?: number;
   skill?: PieceSkill;
 }
 
@@ -207,6 +207,30 @@ export function createAdventureChessManager(opts: AdventureChessManagerOptions) 
   // 멱등성 보장: 같은 차례에 두 번 호출되어도 한 번만 발화.
   let lastHealedKey = '';
 
+  function isPathBlocked(from: Square, to: Square): boolean {
+    const files = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
+    const f1 = files.indexOf(from.charAt(0));
+    const r1 = Number(from.charAt(1));
+    const f2 = files.indexOf(to.charAt(0));
+    const r2 = Number(to.charAt(1));
+
+    const df = Math.sign(f2 - f1);
+    const dr = Math.sign(r2 - r1);
+
+    let currF = f1 + df;
+    let currR = r1 + dr;
+
+    while (currF !== f2 || currR !== r2) {
+      const sq = `${files[currF]}${currR}` as Square;
+      if (piecesBySquare.has(sq)) {
+        return true;
+      }
+      currF += df;
+      currR += dr;
+    }
+    return false;
+  }
+
   function getKingPenalty(type: AdventurePiece['type']): number {
     switch (type) {
       case 'p': return 2;
@@ -289,7 +313,15 @@ export function createAdventureChessManager(opts: AdventureChessManagerOptions) 
         
         // 킹 왕의 진노 ATK 버프 해제
         if (piece.tempAtkBonus) {
-          delete piece.tempAtkBonus;
+          if (piece.tempAtkBonusTurns !== undefined) {
+            piece.tempAtkBonusTurns -= 1;
+            if (piece.tempAtkBonusTurns < 0) {
+              delete piece.tempAtkBonus;
+              delete piece.tempAtkBonusTurns;
+            }
+          } else {
+            delete piece.tempAtkBonus;
+          }
         }
       }
     }
@@ -367,6 +399,52 @@ export function createAdventureChessManager(opts: AdventureChessManagerOptions) 
       return { ok: true, outcome: { kind: 'noop' }, fen: real.move.fen, lastMove: real.move };
     }
 
+    // 적 킹(보스)을 공격하는 경우 — 캡처(소멸)가 아니라 데미지만 가하고 원위치로 돌아감 (damaged 분기)
+    if (defender.type === 'k') {
+      const dmg = effectiveAttack(attacker, globalMods);
+      defender.hp = Math.max(0, defender.hp - dmg);
+
+      // 공격자의 피해 정산 (반격 데미지 = 방어자(킹) attack + thorns)
+      const attackerDamage = effectiveAttack(defender, globalMods) + effectiveThornsDamage(defender, globalMods);
+      let attackerDied = false;
+
+      if (attackerDamage > 0) {
+        if (attacker.type === 'k') {
+          calculateMitigatedDamage(attacker, attackerDamage);
+        } else {
+          calculateMitigatedDamage(attacker, attackerDamage);
+          if (attacker.hp <= 0) {
+            attackerDied = true;
+            // 공격 기물 자멸 -> 보드 판 원래 위치(from)에서 제거
+            chess.removePiece(from);
+            piecesBySquare.delete(from);
+            piecesById.delete(attacker.id);
+
+            // 자멸한 기물이 아군이면 킹 HP 전가 패널티 적용
+            if (attacker.side === 'w') {
+              applyKingPenalty(getKingPenalty(attacker.type));
+            }
+          }
+        }
+      }
+
+      // 차례 교대 및 en-passant 권리 무효화 등을 위해 swapTurnOnly 호출
+      chess.swapTurnOnly();
+
+      return {
+        ok: true,
+        outcome: {
+          kind: 'damaged',
+          attackerId: attacker.id,
+          defenderId: defender.id,
+          damage: dmg,
+          defenderRemainingHp: defender.hp,
+          revert: true,
+        },
+        fen: chess.getFen(),
+      };
+    }
+
     // 3. 캡처가 있는 경우 -> FIDE 룰대로 캡처는 100% 무조건 먼저 성공
     const real = chess.tryMove(uci);
     if (!real.ok) {
@@ -395,7 +473,7 @@ export function createAdventureChessManager(opts: AdventureChessManagerOptions) 
     }
 
     // 공격자의 피해 정산 (반격 데미지 = 방어자 attack + thorns)
-    const attackerDamage = defender.attack + effectiveThornsDamage(defender, globalMods);
+    const attackerDamage = effectiveAttack(defender, globalMods) + effectiveThornsDamage(defender, globalMods);
     let attackerDied = false;
 
     if (attackerDamage > 0) {
@@ -434,7 +512,7 @@ export function createAdventureChessManager(opts: AdventureChessManagerOptions) 
         kind: 'captured',
         attackerId: attacker.id,
         capturedId: defender.id,
-        damage: defender.attack,
+        damage: effectiveAttack(defender, globalMods),
         move: real.move,
         attackerDied,
       },
@@ -574,6 +652,9 @@ export function createAdventureChessManager(opts: AdventureChessManagerOptions) 
         if (Math.abs(f1 - f2) !== Math.abs(r1 - r2)) {
           return { ok: false, reason: 'not-diagonal-path', outcome: { kind: 'noop' }, fen: chess.getFen() };
         }
+        if (isPathBlocked(attacker.square, targetSquare)) {
+          return { ok: false, reason: 'heal-path-blocked', outcome: { kind: 'noop' }, fen: chess.getFen() };
+        }
 
         const healAmount = Math.round(20 * effectMultiplier);
         targetPiece.hp = Math.min(targetPiece.maxHp, targetPiece.hp + healAmount);
@@ -603,6 +684,9 @@ export function createAdventureChessManager(opts: AdventureChessManagerOptions) 
         const isDiagonal = Math.abs(f1 - f2) === Math.abs(r1 - r2);
         if (!isOrthogonal && !isDiagonal) {
           return { ok: false, reason: 'not-straight-path', outcome: { kind: 'noop' }, fen: chess.getFen() };
+        }
+        if (isPathBlocked(attacker.square, targetSquare)) {
+          return { ok: false, reason: 'pull-path-blocked', outcome: { kind: 'noop' }, fen: chess.getFen() };
         }
 
         const files = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
@@ -690,6 +774,7 @@ export function createAdventureChessManager(opts: AdventureChessManagerOptions) 
         for (const p of piecesById.values()) {
           if (p.side === attacker.side) {
             p.tempAtkBonus = 5;
+            p.tempAtkBonusTurns = 1;
           }
         }
 

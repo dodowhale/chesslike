@@ -9,6 +9,13 @@ const PIECE_LABEL: Record<PieceType, string> = {
   p: '폰', n: '나이트', b: '비숍', r: '룩', q: '퀸', k: '킹',
 };
 
+const RARITY_CLASSES: Record<string, string> = {
+  common: 'border-slate-700 bg-slate-900 hover:border-slate-500',
+  uncommon: 'border-blue-500/50 bg-blue-500/5 hover:border-blue-400',
+  rare: 'border-purple-500/50 bg-purple-500/5 hover:border-purple-400',
+  legendary: 'border-amber-500 bg-amber-500/10 hover:border-amber-400 shadow-[0_0_10px_rgba(245,158,11,0.2)] animate-pulse',
+};
+
 function modifierLabel(mod: Modifier): string {
   const parts: string[] = [];
   if (mod.hp) parts.push(`HP+${mod.hp}`);
@@ -88,17 +95,29 @@ export default function AdventureInventory() {
                   <button
                     type="button"
                     onClick={() => setSelectedItemId(item.id)}
-                    class={`text-left p-2 rounded-md border ${
+                    class={`text-left p-2 rounded-md border transition-all ${
                       selectedItemId() === item.id
-                        ? 'border-amber-400 bg-amber-500/10'
-                        : 'border-slate-700 bg-slate-900 hover:border-slate-500'
+                        ? 'border-amber-400 bg-amber-500/20 ring-2 ring-amber-400/50'
+                        : RARITY_CLASSES[item.rarity] || 'border-slate-700 bg-slate-900'
                     }`}
                   >
-                    <div class="flex items-center justify-between">
-                      <span class="font-semibold text-slate-100">{item.name}</span>
-                      <span class="text-xs text-amber-400">{item.rarity}</span>
+                    <div class="flex flex-row gap-3 items-center w-full">
+                      <div class="w-10 h-10 border border-slate-700 bg-slate-950 rounded flex items-center justify-center overflow-hidden flex-shrink-0">
+                        <img
+                          src={`/assets/adventure/items/${item.id}.png`}
+                          class="w-8 h-8 object-contain"
+                          style={{ "image-rendering": "pixelated" }}
+                          alt={item.name}
+                        />
+                      </div>
+                      <div class="flex-grow">
+                        <div class="flex items-center justify-between">
+                          <span class="font-semibold text-slate-100">{item.name}</span>
+                          <span class="text-xs text-amber-400">{item.rarity}</span>
+                        </div>
+                        <p class="text-xs text-slate-400 mt-1">{item.description}</p>
+                      </div>
                     </div>
-                    <p class="text-xs text-slate-400 mt-1">{item.description}</p>
                   </button>
                 )}
               </For>

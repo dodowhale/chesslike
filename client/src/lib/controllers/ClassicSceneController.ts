@@ -11,6 +11,7 @@ import {
   setOrientation,
   setStatus,
   undoMove,
+  getChessManager,
 } from '@/store/gameStore';
 import {
   createClockManager,
@@ -150,8 +151,13 @@ export abstract class ClassicSceneControllerBase implements ClassicSceneControll
       const flag = this.clock.tick(performance.now());
       this.syncClockSnapshot();
       if (flag) {
-        const winner: Color = flag === 'w' ? 'b' : 'w';
-        this.setStatusInternal({ kind: 'timeout', winner });
+        const opponent: Color = flag === 'w' ? 'b' : 'w';
+        const isInsufficient = getChessManager().hasInsufficientMaterialToMate(opponent);
+        if (isInsufficient) {
+          this.setStatusInternal({ kind: 'insufficient-material' });
+        } else {
+          this.setStatusInternal({ kind: 'timeout', winner: opponent });
+        }
         this.raf = null;
         return;
       }

@@ -43,6 +43,9 @@
     "shared": {
       "name": "@chesslike/shared",
       "version": "0.0.0",
+      "devDependencies": {
+        "typescript": "^5.7.2",
+      },
     },
   },
   "packages": {

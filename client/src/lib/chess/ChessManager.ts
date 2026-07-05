@@ -77,6 +77,8 @@ export interface ChessManager {
   swapTurnOnly(): { ok: true } | { ok: false; reason: string };
   removePiece(square: Square): { ok: true } | { ok: false; reason: string };
   putPiece(piece: { type: PieceSymbol; color: Color }, square: Square): { ok: true } | { ok: false; reason: string };
+  /** 특정 진영이 상대를 체크메이트시킬 수 있는 최소한의 기물을 갖고 있지 않은지 여부 (FIDE 6.9조) */
+  hasInsufficientMaterialToMate(color: Color): boolean;
 }
 
 interface ParsedUci {
@@ -369,6 +371,31 @@ export function createChessManager(initialFen: string = INITIAL_FEN): ChessManag
       } catch (err) {
         return { ok: false, reason: err instanceof Error ? err.message : 'error' };
       }
+    },
+    hasInsufficientMaterialToMate: (color: Color) => {
+      const board = chess.board();
+      const pieces: { type: PieceSymbol; color: Color }[] = [];
+      for (let r = 0; r < 8; r++) {
+        const row = board[r];
+        if (!row) continue;
+        for (let f = 0; f < 8; f++) {
+          const sq = row[f];
+          if (sq && sq.color === color) {
+            pieces.push({ type: sq.type, color: sq.color });
+          }
+        }
+      }
+
+      const count = pieces.length;
+      if (count <= 1) return true; // 킹 1개만 남았을 때 (혹은 기물이 없을 때)
+      if (count === 2) {
+        const hasBishop = pieces.some((p) => p.type === 'b');
+        const hasKnight = pieces.some((p) => p.type === 'n');
+        if (hasBishop || hasKnight) {
+          return true; // KB 또는 KN은 메이트 불가
+        }
+      }
+      return false;
     },
   };
 }

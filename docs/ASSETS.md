@@ -429,17 +429,17 @@ ASSETS.md §11 발주 스펙에 기반해 사용자가 1차 정식 자산을 도
 | 카테고리 | 발주 수 | 도입 수 | 위치 | 상태 |
 |---|---|---|---|---|
 | 기물 36 PNG | 36 | 36 | `client/public/assets/pieces/{characterId}/{side}{type}.png` | ✅ placeholder 교체 |
-| 노드 아이콘 | 6 | 6 | `client/public/assets/adventure/nodes/{battle,elite,shop,event,rest,boss}.png` | ✅ 신규 도입 |
-| 보스 스프라이트 | 3 | 3 | `client/public/assets/adventure/bosses/act{1,2,3}.png` | ✅ 신규 도입 |
-| 캐릭터 초상화 | 3+1 | 4 | `client/public/assets/adventure/characters/{standard,assassins,saints,locked}.png` | ✅ 신규 도입 |
-| 아이템 아이콘 | 30 | 30 | `client/public/assets/adventure/items/{itemId}.png` | ✅ 신규 도입 |
-| 막별 배경 | 3 | 3 | `client/public/assets/adventure/backgrounds/act{1,2,3}.png` | ✅ 신규 도입 |
+| 노드 아이콘 | 6 | 6 | `client/public/assets/adventure/nodes/{battle,elite,shop,event,rest,boss}.png` | ✅ UI 통합 완료 |
+| 보스 스프라이트 | 3 | 3 | `client/public/assets/adventure/bosses/act{1,2,3}.png` | ✅ UI 통합 완료 |
+| 캐릭터 초상화 | 3+1 | 4 | `client/public/assets/adventure/characters/{standard,assassins,saints,locked}.png` | ✅ UI 통합 완료 |
+| 아이템 아이콘 | 30 | 30 | `client/public/assets/adventure/items/{itemId}.png` | ✅ UI 통합 완료 |
+| 막별 배경 | 3 | 3 | `client/public/assets/adventure/backgrounds/act{1,2,3}.png` | ✅ UI 통합 완료 |
 | BGM | 7 트랙 | 0 | `client/public/assets/bgm/` | ⏳ 사운드 디자이너 발주 대기 |
 | SFX | 13 키 | 0 | `client/public/assets/sfx/` | ⏳ 사운드 디자이너 발주 대기 |
 
 **generator 가드**: 기물 placeholder generator(`scripts/generate-piece-placeholders.ts`)는 동일 경로에 PNG를 출력하므로 `bun run gen:placeholders`를 실행하면 정식 자산이 덮어쓰여진다. 정식 자산 도입 후에는 generator 실행 금지. `pieces_old/`에 1차 placeholder를 보존했고 .gitignore로 추적은 안 함 — 필요 시 복구만 가능.
 
-**코드 통합 상태**: 본 사이클은 자산 파일 도입까지. 노드 아이콘·보스·캐릭터 초상화·아이템 카드·배경의 UI 통합은 후속 사이클에서 컴포넌트별로 진행 (현재는 이모지/색상 fallback 그대로 동작 — 자산만 디스크에 있고 화면엔 미반영). 기물 PNG는 BootScene이 같은 경로에서 preload하므로 보드는 즉시 정식 도트 적용.
+**코드 통합 상태**: 본 사이클에서 노드 아이콘, 보스 수호자 정보창, 캐릭터 초상화, 아이템 아이콘, 막별 배경 PNG 자산의 UI 통합을 전면 완료함. 기물 PNG는 BootScene preload를 통해 즉시 보드에 반영됨. BGM/SFX 음원의 실 장착은 사운드 디자이너 발주 및 자산 도입 완료 후 진행 예정.
 
 ### 11.14 색 톤 일관성 가이드
 

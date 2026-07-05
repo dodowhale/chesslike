@@ -13,6 +13,13 @@ const RARITY_PRICES: Record<Item['rarity'], number> = {
   legendary: 300,
 };
 
+const RARITY_CLASSES: Record<string, string> = {
+  common: 'border-slate-700 bg-slate-900/60',
+  uncommon: 'border-blue-500/50 bg-blue-500/5',
+  rare: 'border-purple-500/50 bg-purple-500/5',
+  legendary: 'border-amber-500 bg-amber-500/10 shadow-[0_0_10px_rgba(245,158,11,0.15)]',
+};
+
 export default function AdventureShop() {
   const navigate = useNavigate();
   const [boughtIds, setBoughtIds] = createSignal<string[]>([]);
@@ -60,16 +67,30 @@ export default function AdventureShop() {
               const isBought = () => boughtIds().includes(item.id);
               const canBuy = (gameStore.adventure?.gold ?? 0) >= price && !isBought();
               return (
-                <div class="flex flex-col gap-2 p-3 border border-slate-700 rounded-lg bg-slate-900">
-                  <div class="flex items-center justify-between">
-                    <span class="font-semibold text-slate-100">{item.name}</span>
-                    <span class="text-xs text-amber-400">{item.rarity}</span>
+                <div class={`flex flex-col gap-2 p-3 border rounded-lg transition-all ${
+                  isBought() ? 'border-slate-800 bg-slate-950/40 opacity-50' : RARITY_CLASSES[item.rarity] || 'border-slate-700 bg-slate-900'
+                }`}>
+                  <div class="flex flex-row gap-3 items-center">
+                    <div class="w-10 h-10 border border-slate-700 bg-slate-950 rounded flex items-center justify-center overflow-hidden flex-shrink-0">
+                      <img
+                        src={`/assets/adventure/items/${item.id}.png`}
+                        class="w-8 h-8 object-contain"
+                        style={{ "image-rendering": "pixelated" }}
+                        alt={item.name}
+                      />
+                    </div>
+                    <div class="flex-grow min-w-0">
+                      <div class="flex items-center justify-between gap-1">
+                        <span class="font-semibold text-slate-100 truncate text-sm">{item.name}</span>
+                        <span class="text-[10px] text-amber-400 flex-shrink-0">{item.rarity}</span>
+                      </div>
+                    </div>
                   </div>
-                  <p class="text-xs text-slate-300 flex-1">{item.description}</p>
+                  <p class="text-xs text-slate-300 flex-grow mt-1">{item.description}</p>
                   <Button
                     variant={isBought() ? 'secondary' : canBuy ? 'primary' : 'secondary'}
                     onClick={() => buy(item)}
-                    class="text-sm"
+                    class="text-xs mt-2"
                     disabled={isBought() || !canBuy}
                   >
                     {isBought() ? '품절' : `💰 ${price} 구매`}

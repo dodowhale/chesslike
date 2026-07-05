@@ -86,6 +86,13 @@ export const en: I18nDict = {
     legendaries: 'Legendaries Found',
     shopPurchases: 'Shop Nodes Visited',
     back: 'Main Menu',
+    leaderboardTitle: 'Global Leaderboard',
+    rank: 'Rank',
+    nickname: 'Nickname',
+    character: 'Character',
+    progress: 'Act Reached',
+    score: 'Nodes Completed',
+    noLeaderboard: 'No leaderboard entry registered yet.',
   },
   help: {
     title: 'Help',

@@ -87,8 +87,17 @@ export default function AdventureMap() {
   }
 
   return (
-    <div class="min-h-screen flex flex-col">
-      <header class="flex items-center justify-between px-4 py-3 border-b border-slate-800">
+    <div class="min-h-screen flex flex-col relative overflow-hidden">
+      <div
+        class="absolute inset-0 z-0 pointer-events-none opacity-20"
+        style={{
+          "background-image": `url('/assets/adventure/backgrounds/act${gameStore.adventure?.act ?? 1}.png')`,
+          "background-size": "cover",
+          "background-position": "center",
+          "image-rendering": "pixelated"
+        }}
+      />
+      <header class="flex items-center justify-between px-4 py-3 border-b border-slate-800 z-10 bg-slate-950/85 backdrop-blur-sm">
         <div class="flex items-center gap-3">
           <Button variant="ghost" onClick={() => navigate('/adventure')}>
             ← 런 포기
@@ -107,7 +116,7 @@ export default function AdventureMap() {
           </Button>
         </div>
       </header>
-      <main class="flex-1 max-w-3xl mx-auto w-full px-4 py-6">
+      <main class="flex-1 max-w-3xl mx-auto w-full px-4 py-6 z-10">
         <MapGraph
           rows={rows()}
           currentNodeId={currentNodeId()}
@@ -210,7 +219,12 @@ function MapGraph(props: MapGraphProps) {
                       props.availableIds.has(node.id),
                     )}
                   >
-                    <span class="text-2xl">{NODE_ICONS[node.type]}</span>
+                    <img
+                      src={`/assets/adventure/nodes/${node.type}.png`}
+                      class="w-10 h-10 object-contain"
+                      style={{ "image-rendering": "pixelated" }}
+                      alt={NODE_LABELS[node.type]}
+                    />
                     <span class="text-[10px] uppercase tracking-wider">
                       {NODE_LABELS[node.type]}
                     </span>

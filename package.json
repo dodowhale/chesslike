@@ -9,9 +9,9 @@
     "shared"
   ],
   "scripts": {
-    "dev": "bun --filter client dev",
-    "build": "bun --filter client build",
-    "preview": "bun --filter client preview",
+    "dev": "bun --filter @chesslike/client dev",
+    "build": "bun --filter @chesslike/client build",
+    "preview": "bun --filter @chesslike/client preview",
     "typecheck": "bun --filter '*' typecheck",
     "gen:placeholders": "bun scripts/generate-piece-placeholders.ts",
     "gen:stockfish": "bun scripts/copy-stockfish.ts",

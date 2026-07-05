@@ -271,12 +271,27 @@ export default function AdventureBoss() {
     navigate('/adventure/run/map');
   }
 
-  const playerKingHp = () =>
-    run()?.pieces.find((p) => p.side === 'w' && p.type === 'k')?.hp ?? 0;
+  const playerKingHp = () => {
+    const c = activeRun();
+    const chess = c?.getBoardChess();
+    if (chess) {
+      return chess.getKingHp('w');
+    }
+    return run()?.pieces.find((p) => p.side === 'w' && p.type === 'k')?.hp ?? 0;
+  };
 
   return (
-    <div class="min-h-screen flex flex-col">
-      <header class="flex items-center justify-between px-4 py-3 border-b border-slate-800">
+    <div class="min-h-screen flex flex-col relative overflow-hidden">
+      <div
+        class="absolute inset-0 z-0 pointer-events-none opacity-15"
+        style={{
+          "background-image": `url('/assets/adventure/backgrounds/act${gameStore.adventure?.act ?? 1}.png')`,
+          "background-size": "cover",
+          "background-position": "center",
+          "image-rendering": "pixelated"
+        }}
+      />
+      <header class="flex items-center justify-between px-4 py-3 border-b border-slate-800 z-10 bg-slate-950/85 backdrop-blur-sm w-full">
         <Button variant="ghost" onClick={onBackButton}>
           ← {outcome() === null ? '보스전 포기' : '맵으로'}
         </Button>
@@ -285,7 +300,31 @@ export default function AdventureBoss() {
         </span>
         <span class="text-xs text-slate-400">킹 HP {playerKingHp()}</span>
       </header>
-      <main class="flex-1 flex flex-col items-center justify-center gap-3 p-4">
+      <main class="flex-1 flex flex-col items-center justify-center gap-3 p-4 z-10 w-full">
+        <Show when={gameStore.adventure}>
+          <div class="flex items-center gap-3 bg-slate-900 border border-red-950 px-4 py-2 rounded-lg max-w-[480px] w-full shadow-lg shadow-red-950/10">
+            <div class="w-14 h-14 border border-red-500/40 bg-slate-950 rounded flex items-center justify-center overflow-hidden flex-shrink-0">
+              <img
+                src={`/assets/adventure/bosses/act${gameStore.adventure?.act ?? 1}.png`}
+                class="w-full h-full object-contain"
+                style={{ "image-rendering": "pixelated" }}
+                alt={`Act ${gameStore.adventure?.act ?? 1} Boss`}
+              />
+            </div>
+            <div>
+              <h2 class="text-sm font-bold text-red-400 uppercase tracking-wide">
+                {gameStore.adventure?.act ?? 1}막 보스 수호자
+              </h2>
+              <p class="text-[11px] text-slate-400">
+                {gameStore.adventure?.act === 1
+                  ? '기본기가 탄탄하며 2페이즈에 돌입 시 파괴력이 증폭됩니다.'
+                  : gameStore.adventure?.act === 2
+                  ? '숲의 기운을 다루며 강력한 생명력 반사 능력을 가집니다.'
+                  : '심해의 공포. 강력한 군중 제어와 침식을 활용합니다.'}
+              </p>
+            </div>
+          </div>
+        </Show>
         <Show when={currentNode()}>
           <p class="text-xs text-slate-400">
             SPEC §4.2 — 체크메이트로만 페이즈 종료 (모험 보스 모드)

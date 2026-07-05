@@ -81,8 +81,8 @@ interface ClassicConfig {
 interface Modifier {
   hp?: number;
   attack?: number;
-  range?: number;
-  jumpOver?: boolean;       // 다른 기물 위를 점프 가능
+  range?: number;            // 미사용 (후속 확장 대기)
+  jumpOver?: boolean;       // 다른 기물 위를 점프 가능 - 미사용 (후속 확장 대기)
   healPerTurn?: number;
   thornsDamage?: number;
 }
@@ -268,9 +268,9 @@ export type CharacterId = 'standard' | 'assassins' | 'saints';
 
 - 이동 타겟 칸에 적 기물이 존재할 경우, FIDE 정규 행마에 맞춰 **캡처가 무조건 먼저 성공**한다 (방어자는 즉시 보드에서 제거).
 - 캡처 완료 시 데미지 및 반격 데미지 정산:
-  - 공격자 피해량: `attacker.hp -= defender.attack`
+  - 공격자가 받는 반격 피해량: `attacker.hp -= (defender의 최종 공격력(effectiveAttack) + 반사 피해(effectiveThornsDamage))`
   - 만약 `attacker.hp <= 0`이 되면, 공격 기물 역시 사망하여 보드에서 즉시 제거된다 (`chess.remove(square)` 호출하여 해당 칸을 빈칸 처리).
-  - 킹이 직접 캡처를 가해 반격 피해로 `king.hp <= 0`이 될 경우 게임은 즉시 패배로 종료된다.
+  - 플레이어 킹이 직접 캡처를 가해 반격 피해를 입거나, 일반 피격/스킬 피격/HP 전가 등으로 **플레이어 킹의 HP가 0 이하가 되면 게임은 즉시 패배로 종료**된다.
 - **기물 소실에 따른 킹 전가 피해**:
   - 아군 기물이 캡처당해 보드에서 제거되거나, 반격 데미지로 자멸할 때 플레이어 킹의 HP가 감소한다.
   - 피해량 공식: `playerKing.hp -= losePenalty(pieceType)` (폰: 2, 나이트/비숍: 5, 룩: 8, 퀸: 12).
@@ -278,7 +278,7 @@ export type CharacterId = 'standard' | 'assassins' | 'saints';
 ### 5.2 앙파상 (En Passant)
 
 - 앙파상 이동 시, 대상 폰은 즉시 캡처되어 제거된다.
-- 앙파상을 행한 폰은 대상 폰의 ATK만큼 반격 피해를 입으며, `hp <= 0`이 되면 앙파상 최종 도달 칸(`to`)에서 사망하여 제거된다.
+- 앙파상을 행한 아군 폰은 대상 폰의 최종 공격력(`effectiveAttack`)만큼 반격 피해를 입으며, `hp <= 0`이 되면 앙파상 최종 도달 칸(`to`)에서 사망하여 제거된다.
 
 ### 5.3 폰 승급 (Promotion)
 

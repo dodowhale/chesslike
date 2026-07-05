@@ -5,6 +5,8 @@
 ## [Unreleased] — M6+ 콘텐츠·UX 패키지
 
 ### Added
+- 글로벌 리더보드 시스템 추가: Bun built-in SQLite를 이용한 `server` DB 및 `/api/leaderboard` (GET/POST), `/api/achievements/verify` (POST) API 구현.
+- 글로벌 리더보드 프론트엔드 연동: `client/src/lib/platform/serverApi.ts` 모듈 생성, `/stats` 화면에서 로컬/글로벌 리더보드 탭 분리 제공, 게임 종료(`/adventure/result`) 시 닉네임을 입력하여 랭킹 및 도전과제를 서버로 전송할 수 있는 제출 폼 추가.
 - 모험 이벤트 풀 6 → 15 (`goblin-ambush`, `hermits-blessing`, `cursed-chest`, `pilgrims-shrine`, `wanderers-deal`, `ravens-warning`, `forgotten-library`, `merchants-favor`, `arena-trial`)
 - 아이템 풀 확장: Rare 5 → 10, Legendary 2 → 5
 - 도전과제 풀 5 → 15 (act2-clear, act3-clear, saints-clear, gold-hoarder, flawless-act1, event-explorer, shop-spender, boss-slayer, rare-trio, legend-trio)
@@ -24,6 +26,7 @@
 - `evaluateAchievementsOnRunEnd` 시그니처: 누적형 도전과제 평가를 위해 `RunStats` 인자 추가 (옵셔널, 기존 호출처 호환 유지).
 
 ### Fixed
+- 모험 모드 킹의 액티브 스킬 '왕의 진노'의 공격력 증가 버프가 턴 시작 즉시 제거되어 한 번도 공격에 적용되지 못하던 버그를 `tempAtkBonusTurns` 카운터를 도입하여 본인의 다음 턴 공격이 완료될 때까지 정상 유지되도록 수정.
 - 모험 모드 캡처 실패(damaged) 시 chess.js active color가 swap되지 않아 후속 차례 흐름이 멈추던 버그. `ChessManager.swapTurnOnly()` 추가하고 `AdventureChessManager.tryMove`의 damaged 분기에서 호출하도록 수정 (FEN active color swap + en-passant target 무효화 + halfmove +1, 흑→백 시 fullmove +1).
 - 모험 Battle/Boss 화면의 좌상단 ← 버튼이 outcome 결정 전까지 disabled 상태라 사용자가 전투를 떠날 수 없던 문제. 버튼을 항상 활성화하고, 진행 중에는 "전투 포기" 확인 모달을 표시 후 맵으로 이동 (노드는 미완료로 남아 재진입 가능, 보드는 초기 진형으로 재시작). 보스도 동일 패턴.
 - 전투 포기 후 맵에서 다음 스테이지 노드가 잘못 진입 가능해지던 버그. 원인: `AdventureRunController.availableNextNodes`가 currentNode의 isCompleted를 보지 않고 nextNodes를 그대로 반환했고, `advanceTo`가 진입 시점에 이전 노드를 자동으로 isCompleted=true 마킹해 markCurrentNodeCompleted 호출 없이도 다음이 열렸음. 수정: `availableNextNodes`는 currentNode.isCompleted=true일 때만 next 반환, `advanceTo`의 자동 마킹 제거 (실제 클리어 마킹은 markCurrentNodeCompleted가 단독 책임).

@@ -383,12 +383,39 @@ export class AdventureRunController implements SceneController {
     setInteractive(true);
     this.syncBoard(undefined, { instant: true });
 
+    // Act 및 보스 여부에 따른 Stockfish AI 난이도 결정
+    const isBoss = this.currentNode()?.type === 'boss';
+    const act = this.run.act;
+    let uciElo = 800;
+    let skillLevel = 1;
+
+    if (isBoss) {
+      if (act === 1) {
+        uciElo = 1200;
+        skillLevel = 3;
+      } else if (act === 2) {
+        uciElo = 1500;
+        skillLevel = 5;
+      } else {
+        uciElo = 1800;
+        skillLevel = 8;
+      }
+    } else {
+      if (act === 2) {
+        uciElo = 1000;
+        skillLevel = 2;
+      } else if (act === 3) {
+        uciElo = 1200;
+        skillLevel = 4;
+      }
+    }
+
     void getEngine().init().then(() => {
       getEngine().newGame();
       getEngine().setOptions({
         limitStrength: true,
-        uciElo: 800,
-        skillLevel: 1,
+        uciElo,
+        skillLevel,
       });
     }).catch((err) => {
       console.warn('Failed to init Stockfish for adventure:', err);
@@ -572,17 +599,17 @@ export class AdventureRunController implements SceneController {
     const whiteKingHp = this.boardChess.getKingHp('w');
     const blackKingHp = this.boardChess.getKingHp('b');
 
-    // SPEC §4.2: 보스에서는 KingHp=0이 종료가 아닌 약화의 자리표. 일반 노드만 즉시 종료.
-    if (!isBoss) {
-      if (whiteKingHp <= 0) {
-        setStatus({ kind: 'resignation', winner: 'b' });
-        return true;
-      }
-      if (blackKingHp <= 0) {
-        this.saveBoardPiecesToRun();
-        setStatus({ kind: 'checkmate', winner: 'w' });
-        return true;
-      }
+    // 플레이어 킹 HP가 0 이하면 노드 종류 불문하고 항상 패배
+    if (whiteKingHp <= 0) {
+      setStatus({ kind: 'resignation', winner: 'b' });
+      return true;
+    }
+
+    // 일반 노드에서 적 킹 HP가 0 이하면 즉시 승리
+    if (!isBoss && blackKingHp <= 0) {
+      this.saveBoardPiecesToRun();
+      setStatus({ kind: 'checkmate', winner: 'w' });
+      return true;
     }
 
     if (this.boardChess.isCheckmate()) {
@@ -596,11 +623,14 @@ export class AdventureRunController implements SceneController {
       return true;
     }
     if (this.boardChess.isStalemate()) {
-      // SPEC §5.5: 일반 노드는 패배. 보스는 양측 진행 불가 시 따로 처리.
-      if (isBoss) {
-        setStatus({ kind: 'draw-agreement' });
-      } else {
+      // SPEC §5.5: 플레이어의 차례(w)에 합법 수가 없을 시 패배.
+      // 적/보스의 차례(b)에 합법 수가 없을 시 플레이어 승리(또는 페이즈 클리어).
+      const loser = this.boardChess.turn();
+      if (loser === 'w') {
         setStatus({ kind: 'resignation', winner: 'b' });
+      } else {
+        this.saveBoardPiecesToRun();
+        setStatus({ kind: 'checkmate', winner: 'w' });
       }
       return true;
     }

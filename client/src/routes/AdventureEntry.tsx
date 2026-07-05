@@ -95,16 +95,25 @@ export default function AdventureEntry() {
                 type="button"
                 disabled={!character.isUnlocked}
                 onClick={() => startRun(character.id)}
-                class="text-left flex flex-col gap-2 p-4 rounded-lg border-2 border-purple-500/40 bg-gradient-to-br from-purple-500/20 to-fuchsia-700/10 hover:border-purple-400 hover:scale-[1.01] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                class="text-left flex flex-row gap-4 p-4 rounded-lg border-2 border-purple-500/40 bg-gradient-to-br from-purple-500/20 to-fuchsia-700/10 hover:border-purple-400 hover:scale-[1.01] transition-all disabled:opacity-50 disabled:cursor-not-allowed w-full"
               >
-                <div class="flex items-center gap-2">
-                  <span class="text-3xl">♟</span>
-                  <span class="text-xl font-bold text-slate-100">{character.name}</span>
-                  {!character.isUnlocked && (
-                    <span class="text-xs text-slate-400">잠김 (메타 진행에서 해금)</span>
-                  )}
+                <div class="flex-shrink-0 w-16 h-16 border border-slate-700 bg-slate-950 rounded overflow-hidden flex items-center justify-center">
+                  <img
+                    src={character.isUnlocked ? `/assets/adventure/characters/${character.id}.png` : `/assets/adventure/characters/locked.png`}
+                    class="w-full h-full object-contain"
+                    style={{ "image-rendering": "pixelated" }}
+                    alt={character.name}
+                  />
                 </div>
-                <p class="text-sm text-slate-300">{character.description}</p>
+                <div class="flex flex-col gap-1 justify-center">
+                  <div class="flex items-center gap-2">
+                    <span class="text-lg font-bold text-slate-100">{character.name}</span>
+                    {!character.isUnlocked && (
+                      <span class="text-xs text-slate-400 font-normal">잠김 (메타 진행에서 해금)</span>
+                    )}
+                  </div>
+                  <p class="text-xs text-slate-300 line-clamp-2">{character.description}</p>
+                </div>
               </button>
             )}
           </For>
