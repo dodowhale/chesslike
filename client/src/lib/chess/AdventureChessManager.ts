@@ -289,12 +289,16 @@ export function createAdventureChessManager(opts: AdventureChessManagerOptions) 
         piece.poisonTurns -= 1;
         
         if (piece.hp <= 0) {
-          chess.removePiece(piece.square);
-          piecesBySquare.delete(piece.square);
-          piecesById.delete(piece.id);
-          
-          if (piece.side === 'w') {
-            applyKingPenalty(getKingPenalty(piece.type));
+          if (piece.type === 'k' && piece.side === 'b') {
+            piece.hp = 0;
+          } else {
+            chess.removePiece(piece.square);
+            piecesBySquare.delete(piece.square);
+            piecesById.delete(piece.id);
+            
+            if (piece.side === 'w') {
+              applyKingPenalty(getKingPenalty(piece.type));
+            }
           }
         }
       }
@@ -399,6 +403,13 @@ export function createAdventureChessManager(opts: AdventureChessManagerOptions) 
     if (defender.type === 'k') {
       const dmg = effectiveAttack(attacker, globalMods);
       defender.hp = Math.max(0, defender.hp - dmg);
+
+      // 독사의 이빨 세트 시너지 감지: 보스 킹 공격 시 맹독 부여
+      const synIds = getSetSynergyIds(attacker);
+      if (synIds.hasViper) {
+        defender.poisonTurns = 3;
+        defender.poisonDamage = 3;
+      }
 
       // 공격자의 피해 정산 (반격 데미지 = 방어자(킹) attack + thorns)
       const attackerDamage = effectiveAttack(defender, globalMods) + effectiveThornsDamage(defender, globalMods);

@@ -298,7 +298,7 @@ BootScene이 36 텍스처 키(`'standard-wK'`/`'assassins-wK'`/`'saints-wK'` 등
 - `loadRunStats()` — 기본값으로 보강해서 읽기.
 - `saveRunStats(stats)` — 덮어쓰기.
 - `recordRunEnd(run, outcome, startingGold)` — 런 종료 시 1회 호출. 보스 클리어를 act별로 카운트하고, "획득 골드"는 `run.gold - startingGold`로 시작 골드 베이스라인을 제외해 누적.
-- `recordShopPurchase()` — 현재는 결과 도전과제 평가가 shop **노드 통과**를 카운트하므로 호출처 없음 (후속에서 실제 구매 hook 추가 시 사용).
+- `recordShopPurchase()` — 상점(`/adventure/run/shop`)에서 아이템을 구매할 때 호출되어 누적 상점 구매 횟수 통계를 갱신한다.
 
 `AdventureResult.onMount`가 `recordRunEnd` 호출 후 결과 stats를 `evaluateAchievementsOnRunEnd(run, outcome, meta, stats)`로 전달 → 누적형 도전과제(`boss-slayer`, `legend-trio`)가 RunStats 기반으로 평가된다.
 
