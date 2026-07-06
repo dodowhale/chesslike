@@ -37,7 +37,12 @@
 - 정의만 있고 실제로는 작동하지 않던 modifier들 정리. **변경 전**: `thornsDamage`(반사 아이템 7종 + 글로벌 1종), `healPerTurn`(아이템 측), `jumpOver`/`range`(knight-spurs)가 어디서도 처리되지 않아 사용자가 장착해도 효과 없음. **수정**: (a) `thornsDamage` 실 구현 — `AdventureChessManager.tryMove`의 damaged/captured 양쪽에서 `effectiveThornsDamage(defender, globalMods)`를 attacker.hp에서 차감 (본 사이클은 min 1 clamp, 상호 사망은 후속). (b) `healPerTurn` 아이템 합산 — `applyTurnStartHeal`이 각 piece의 장착·글로벌을 추가 합산. 캐릭터 패시브 healPerTurn은 그대로 합산. (c) `knight-spurs` 재설계 — chess.js 룰 확장이 필요한 jumpOver/range를 본 사이클에서 빼고, "박차 = 돌격 + 자기 방어" 메타포에 맞춰 `{ hp: 15, attack: 5, thornsDamage: 3 }` 복합 modifier로 변경. description "HP +15, 공격력 +5, 피격 시 반사 +3". uncommon 등급 안에서 royal-crown(hp20/atk5)·phoenix-feather(heal5)·thorn-mantle(thorns5)·titan-belt(hp15/atk3) 사이의 차별 포지션(stat + 작은 반사). 정식 점프 거리 +1 확장은 후속. (d) 반사 아이템 description "피격 시 반사 +X" 형식으로 통일(spike-helm·fang-amulet·thorn-mantle·ironbark-amulet·serpent-fang·phantom-cloak·eclipse-aegis). AdventureInventory의 jumpOver/range chip 제거 — 작동 안 하는 효과를 사용자에게 노출하지 않음.
 - 클라이언트 빌드 및 타입 오류 수정: `bun-types` 누락으로 인한 `bun:test` 임포트 오류(`TS2307`) 및 strict 옵션 하의 MapGenerator.test.ts 내 index reference `undefined` 가능성 오류(`TS2532`, `TS2322`)를 해결하여 `bun run typecheck` 및 `bun run build` 빌드 파이프라인을 완전 복구함.
 - 보안성 강화: 로컬 개발 시 생성될 수 있는 SQLite DB 파일들(`*.db`, `*.db-journal`, `*.db-wal`, `*.db-shm`)이 Git에 추적되지 않도록 루트 `.gitignore`에 무시 룰을 추가함.
-
+- 모험 모드 액티브 스킬(나이트 '번개 돌진', 퀸 '진공의 손길', 킹 '왕의 진노') 데미지로 인해 적 킹(보스)의 HP가 0 이하가 될 때, 킹 기물이 보드에서 영구 제거되던 버그 수정. 적 킹인 경우에는 기물을 삭제하지 않고 HP 0으로 고정하여 체크메이트 완료 시까지 보드 생존이 유지되도록 보완.
+- `AdventureChessManager.isPathBlocked` 헬퍼에 좌표 범위를 벗어날 경우를 대비한 인덱스 한계 검사 방어 루프 추가.
+- 미구현 상태였던 `no-undo-run` (무르기 없는 런) 도전과제 로직을 실구현 및 보완. 모험 모드에는 현재 무르기가 없으므로, 1막 보스 클리어 시 항상 무르기 없이 클리어한 것으로 간주하여 획득할 수 있도록 로직을 적용하고 이에 대한 단위 테스트를 추가함.
+- dev API(`client/src/lib/devApi.ts`)에서 `giveItem` 및 `addGold` 디버그 명령 사용 시, 런 상태(`AdventureRunState`)를 직접 변조(mutate)하여 SolidJS 반응성이 정상 발화하지 않고, IndexedDB 영속 데이터베이스 저장이 누락되던 잠재적 버그를 수정. 컨트롤러 내의 공식 메서드인 `addInventory(item)`와 `addGold(amount)`를 호출하여 정상적으로 반응성 유발 및 IndexedDB 데이터 보존이 수행되도록 개선함.
+- 모험 인벤토리(`/adventure/run/inventory`)에서 체력이 0 이하인(사망한) 기물에게 아이템을 장착할 수 없도록 수정하고, 사망한 기물은 반투명(opacity-40) 및 배경 어둡게(bg-slate-950/80) 스타일링하여 시각적으로 명확히 인지되도록 보완.
+- 모험 상점(`/adventure/run/shop`)에서 아이템을 구매할 때 `recordShopPurchase()` 통계 기록 함수가 누락되어 누적 상점 구매 횟수가 항상 0으로 노출되던 문제를 실구현하여 수정.
 
 ### Notes
 - 본 사이클은 외부 자산 1차 도입(기물 + 노드/보스/캐릭터/아이템/배경 PNG)까지 포함. **BGM/SFX 음원**, 서버 인프라(SQLite/leaderboard/인증), 새 캐릭터(요새단/혼돈단), 테스트 자동화, 드래그·드롭 입력, 자산의 UI 통합(노드 아이콘·보스·캐릭터 초상화·아이템 카드·배경)은 별도 사이클에서 후속.

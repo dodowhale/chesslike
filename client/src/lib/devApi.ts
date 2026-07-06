@@ -49,17 +49,13 @@ export function installDevApi(): void {
         if (!c) return false;
         const item = getItemById(itemId);
         if (!item) return false;
-        const run = c.state();
-        run.inventory.push(item);
-        gameStore.snapshotAdventureRun(run);
+        c.addInventory(item);
         return true;
       },
       addGold(amount: number): boolean {
         const c = activeRun();
         if (!c) return false;
-        const run = c.state();
-        run.gold = Math.max(0, run.gold + amount);
-        gameStore.snapshotAdventureRun(run);
+        c.addGold(amount);
         return true;
       },
     },

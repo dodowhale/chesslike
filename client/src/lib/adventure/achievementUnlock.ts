@@ -33,7 +33,8 @@ export function evaluateAchievementsOnRunEnd(
 
   // 단일 런 평가
   tryUnlock('first-clear', playerVictory && act1Boss);
-  // no-undo-run: 무르기 카운터가 모험 run에 직접 없어 미구현 — 후속.
+  // 모험 모드에는 현재 무르기 기능이 없으므로 1막 보스 클리어 시 항상 획득
+  tryUnlock('no-undo-run', playerVictory && act1Boss);
   tryUnlock(
     'assassins-clear',
     playerVictory && anyBoss && run.characterId === 'assassins',

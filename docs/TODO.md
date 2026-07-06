@@ -164,6 +164,7 @@
 - [x] 보스 king 공격 시 chess.js가 e8을 합법수로 제공해 capture 분기 진입 → king 캡처 합법 무브 인정 안 됨 → stuck 버그. `AdventureChessManager.tryMove`에서 `defender.type==='k'`이면 항상 damaged 처리 + HP 0 clamp. SPEC §4.2 "보스 KingHp=0은 약화의 자리표, 페이즈 종료는 체크메이트만" 정확 반영.
 - [x] 보스 체크메이트 winner 역전 버그 — `checkBoardEndCondition`이 `turnAfterMove`로 winner를 잘못 계산해 사용자 체크메이트가 finalize defeat로 흘렀음. `chess.turn()`(loser) 기반으로 winner 직접 계산, 인자 제거.
 - [x] 미구현 modifier 일괄 처리 — `thornsDamage`(반사) 실 구현, `healPerTurn`(아이템) `applyTurnStartHeal`에 합산, `knight-spurs`의 `jumpOver`/`range`를 `{hp:15, attack:5, thornsDamage:3}` 복합 modifier로 재설계 ("돌격 + 자기 방어" 메타포, 정식 chess 룰 확장은 후속). 반사 아이템 description "피격 시 반사 +X" 통일.
+- [x] 액티브 스킬 데미지로 인한 적 킹(보스)의 보드 소멸 버그 해결 — 나이트, 퀸, 킹의 액티브 스킬 데미지로 인해 보스 킹 HP가 0 이하가 될 때 기물이 보드에서 영구 제거되던 버그를, 기물 삭제 대신 HP 0 clamp로 생존을 유지하게 하여 정상적으로 체크메이트 유도가 가능하도록 보완.
 
 ### 코드 — AI 강화
 - [x] 보스 전용 강한 AI (Act 및 보스 여부에 따라 Stockfish Elo 800 ~ 1800, Skill Level 1 ~ 8 동적 스케일링 완료)

@@ -44,6 +44,17 @@ describe('achievementUnlock', () => {
     expect(unlockedIds).toContain('first-clear');
   });
 
+  it('should unlock no-undo-run when defeating act 1 boss', () => {
+    const run = createBaseRunState({
+      map: [createBossNode(1, true)],
+    });
+
+    const newlyUnlocked = evaluateAchievementsOnRunEnd(run, 'victory', baseMeta);
+    const unlockedIds = newlyUnlocked.map((a) => a.id);
+
+    expect(unlockedIds).toContain('no-undo-run');
+  });
+
   it('should not unlock first-clear if player lost', () => {
     const run = createBaseRunState({
       map: [createBossNode(1, true)],

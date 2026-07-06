@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/Button';
 import { activeRun } from '@/store/adventureStore';
 import { gameStore } from '@/store/gameStore';
 import { rollItems } from '@/lib/adventure/data/items';
+import { recordShopPurchase } from '@/lib/storage/runStatsRepo';
 import type { Item } from '@shared/adventure';
 
 const RARITY_PRICES: Record<Item['rarity'], number> = {
@@ -44,6 +45,7 @@ export default function AdventureShop() {
     c.addGold(-price);
     c.addInventory(item);
     setBoughtIds([...boughtIds(), item.id]);
+    void recordShopPurchase();
   }
 
   function leave() {

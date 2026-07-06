@@ -136,12 +136,14 @@ export default function AdventureInventory() {
               {(piece) => (
                 <div
                   class={`flex flex-col gap-1 p-2 rounded-md border ${
-                    selectedItemId() && piece.items.length < 2
+                    piece.hp <= 0
+                      ? 'border-slate-800 opacity-40 bg-slate-950/80'
+                      : selectedItemId() && piece.items.length < 2
                       ? 'border-emerald-500/50 cursor-pointer hover:bg-emerald-500/10'
                       : 'border-slate-700'
                   } bg-slate-900`}
-                  onClick={() => selectedItemId() && piece.items.length < 2 && equip(piece.id)}
-                  role={selectedItemId() ? 'button' : undefined}
+                  onClick={() => piece.hp > 0 && selectedItemId() && piece.items.length < 2 && equip(piece.id)}
+                  role={piece.hp > 0 && selectedItemId() ? 'button' : undefined}
                 >
                   <div class="flex items-center justify-between">
                     <span class="font-semibold text-slate-100">

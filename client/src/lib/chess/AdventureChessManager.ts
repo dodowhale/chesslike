@@ -214,6 +214,9 @@ export function createAdventureChessManager(opts: AdventureChessManagerOptions) 
     let currR = r1 + dr;
 
     while (currF !== f2 || currR !== r2) {
+      if (currF < 0 || currF > 7 || currR < 1 || currR > 8) {
+        return true;
+      }
       const sq = `${files[currF]}${currR}` as Square;
       if (piecesBySquare.has(sq)) {
         return true;
@@ -615,11 +618,15 @@ export function createAdventureChessManager(opts: AdventureChessManagerOptions) 
 
                 calculateMitigatedDamage(enemy, targetDmg);
                 if (enemy.hp <= 0) {
-                  chess.removePiece(sq);
-                  piecesBySquare.delete(sq);
-                  piecesById.delete(enemy.id);
-                  if (enemy.side === 'w') {
-                    applyKingPenalty(getKingPenalty(enemy.type));
+                  if (enemy.type === 'k' && enemy.side === 'b') {
+                    enemy.hp = 0;
+                  } else {
+                    chess.removePiece(sq);
+                    piecesBySquare.delete(sq);
+                    piecesById.delete(enemy.id);
+                    if (enemy.side === 'w') {
+                      applyKingPenalty(getKingPenalty(enemy.type));
+                    }
                   }
                 }
               }
@@ -717,11 +724,15 @@ export function createAdventureChessManager(opts: AdventureChessManagerOptions) 
 
         calculateMitigatedDamage(enemy, dmg);
         if (enemy.hp <= 0) {
-          chess.removePiece(pullSquare);
-          piecesBySquare.delete(pullSquare);
-          piecesById.delete(enemy.id);
-          if (enemy.side === 'w') {
-            applyKingPenalty(getKingPenalty(enemy.type));
+          if (enemy.type === 'k' && enemy.side === 'b') {
+            enemy.hp = 0;
+          } else {
+            chess.removePiece(pullSquare);
+            piecesBySquare.delete(pullSquare);
+            piecesById.delete(enemy.id);
+            if (enemy.side === 'w') {
+              applyKingPenalty(getKingPenalty(enemy.type));
+            }
           }
         }
 
@@ -752,11 +763,15 @@ export function createAdventureChessManager(opts: AdventureChessManagerOptions) 
                 
                 calculateMitigatedDamage(enemy, dmg);
                 if (enemy.hp <= 0) {
-                  chess.removePiece(sq);
-                  piecesBySquare.delete(sq);
-                  piecesById.delete(enemy.id);
-                  if (enemy.side === 'w') {
-                    applyKingPenalty(getKingPenalty(enemy.type));
+                  if (enemy.type === 'k' && enemy.side === 'b') {
+                    enemy.hp = 0;
+                  } else {
+                    chess.removePiece(sq);
+                    piecesBySquare.delete(sq);
+                    piecesById.delete(enemy.id);
+                    if (enemy.side === 'w') {
+                      applyKingPenalty(getKingPenalty(enemy.type));
+                    }
                   }
                 }
               }
