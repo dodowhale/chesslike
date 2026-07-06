@@ -20,16 +20,11 @@ export default function StatsRoute() {
   };
 
   const getCharacterName = (id: string) => {
-    switch (id) {
-      case 'standard':
-        return settings.locale === 'ko' ? '정규단' : 'Standard';
-      case 'assassins':
-        return settings.locale === 'ko' ? '암살자단' : 'Assassins';
-      case 'saints':
-        return settings.locale === 'ko' ? '신성단' : 'Saints';
-      default:
-        return id;
+    const chars = dict().characters;
+    if (id === 'standard' || id === 'assassins' || id === 'saints') {
+      return chars[id];
     }
+    return id;
   };
 
   return (
@@ -103,15 +98,15 @@ export default function StatsRoute() {
               </h3>
               <ul class="flex flex-col gap-3 text-slate-200 text-sm">
                 <li class="flex items-center justify-between pb-2 border-b border-slate-800/60">
-                  <span class="font-medium">1막 (Act 1 Boss)</span>
+                  <span class="font-medium">{dict().stats.act1Boss}</span>
                   <span class="font-mono tabular-nums text-emerald-400 font-semibold">{stats()!.bossClearsByAct.act1}</span>
                 </li>
                 <li class="flex items-center justify-between pb-2 border-b border-slate-800/60">
-                  <span class="font-medium">2막 (Act 2 Boss)</span>
+                  <span class="font-medium">{dict().stats.act2Boss}</span>
                   <span class="font-mono tabular-nums text-emerald-400 font-semibold">{stats()!.bossClearsByAct.act2}</span>
                 </li>
                 <li class="flex items-center justify-between">
-                  <span class="font-medium">3막 (Final Boss)</span>
+                  <span class="font-medium">{dict().stats.act3Boss}</span>
                   <span class="font-mono tabular-nums text-emerald-400 font-semibold">{stats()!.bossClearsByAct.act3}</span>
                 </li>
               </ul>
@@ -125,7 +120,7 @@ export default function StatsRoute() {
             <div class="p-6 border-b border-slate-800 flex items-center justify-between">
               <h2 class="text-base font-semibold text-slate-200">{dict().stats.leaderboardTitle}</h2>
               <Button variant="ghost" class="text-xs text-teal-400 hover:text-teal-300" onClick={() => refetch()}>
-                🔄 Refresh
+                {dict().stats.refresh}
               </Button>
             </div>
             
@@ -134,18 +129,32 @@ export default function StatsRoute() {
               fallback={
                 <div class="py-20 flex flex-col items-center justify-center gap-3">
                   <div class="w-8 h-8 border-4 border-teal-500 border-t-transparent rounded-full animate-spin"></div>
-                  <span class="text-sm text-slate-400">Loading Leaderboard...</span>
+                  <span class="text-sm text-slate-400">{dict().stats.loading}</span>
                 </div>
               }
             >
               <Show
-                when={leaderboard() && leaderboard()!.length > 0}
+                when={!leaderboard.error}
                 fallback={
-                  <div class="py-20 text-center text-sm text-slate-400">
-                    {dict().stats.noLeaderboard}
+                  <div class="py-16 text-center flex flex-col items-center justify-center gap-3">
+                    <span class="text-4xl block mb-2">🔌</span>
+                    <p class="text-sm text-slate-400 max-w-xs mx-auto">
+                      {dict().stats.offlineMode}
+                    </p>
+                    <Button variant="ghost" class="text-xs text-teal-400 hover:text-teal-300 mt-2" onClick={() => refetch()}>
+                      {dict().stats.retry}
+                    </Button>
                   </div>
                 }
               >
+                <Show
+                  when={leaderboard() && leaderboard()!.length > 0}
+                  fallback={
+                    <div class="py-20 text-center text-sm text-slate-400">
+                      {dict().stats.noLeaderboard}
+                    </div>
+                  }
+                >
                 <div class="overflow-x-auto">
                   <table class="w-full text-left border-collapse text-sm">
                     <thead>
@@ -203,6 +212,7 @@ export default function StatsRoute() {
                 </div>
               </Show>
             </Show>
+          </Show>
           </div>
         </Show>
       </main>

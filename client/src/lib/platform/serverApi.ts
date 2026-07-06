@@ -12,15 +12,10 @@ export interface LeaderboardEntry {
 const SERVER_URL = import.meta.env.VITE_SERVER_URL || 'http://localhost:3000';
 
 export async function fetchLeaderboard(limit = 10): Promise<LeaderboardEntry[]> {
-  try {
-    const res = await fetch(`${SERVER_URL}/api/leaderboard?limit=${limit}`);
-    if (!res.ok) throw new Error('Failed to fetch leaderboard');
-    const data = await res.json();
-    return data.entries ?? [];
-  } catch (err) {
-    console.error('Leaderboard fetch error:', err);
-    return [];
-  }
+  const res = await fetch(`${SERVER_URL}/api/leaderboard?limit=${limit}`);
+  if (!res.ok) throw new Error('Failed to fetch leaderboard');
+  const data = await res.json();
+  return data.entries ?? [];
 }
 
 export async function submitScore(entry: {

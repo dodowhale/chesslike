@@ -6,20 +6,18 @@ import { t } from '@/lib/i18n';
 import { DIFFICULTY_PRESETS, type DifficultyKey } from '@/lib/chess/SingleDifficulty';
 import { setClassicConfig, setMode } from '@/store/gameStore';
 
-const TIME_PRESETS: { key: ClassicTimeControl['preset']; label: string }[] = [
-  { key: 'bullet', label: '불릿 (1분)' },
-  { key: 'blitz', label: '블리츠 (3분 + 2초)' },
-  { key: 'rapid', label: '래피드 (10분 + 5초)' },
-  { key: 'classical', label: '클래시컬 (30분)' },
+import { settings } from '@/store/settingsStore';
+
+const TIME_PRESETS_KEYS: Exclude<ClassicTimeControl['preset'], undefined>[] = [
+  'bullet',
+  'blitz',
+  'rapid',
+  'classical',
 ];
 
 type ColorChoice = SingleModeConfig['playerColor'];
 
-const COLOR_CHOICES: { key: ColorChoice; label: string }[] = [
-  { key: 'w', label: '백' },
-  { key: 'b', label: '흑' },
-  { key: 'random', label: '랜덤' },
-];
+const COLOR_CHOICES_KEYS: ColorChoice[] = ['w', 'b', 'random'];
 
 export default function ClassicSingleOptions() {
   const navigate = useNavigate();
@@ -82,7 +80,7 @@ export default function ClassicSingleOptions() {
       <main class="flex-1 max-w-2xl mx-auto w-full px-4 py-6 flex flex-col gap-6">
         <section>
           <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-400 mb-3">
-            난이도
+            {dict().classicOptions.difficultyHeading}
           </h2>
           <div class="grid grid-cols-2 md:grid-cols-3 gap-2">
             <For each={DIFFICULTY_PRESETS}>
@@ -96,8 +94,8 @@ export default function ClassicSingleOptions() {
                       : 'border-slate-700 bg-slate-900 hover:border-slate-500'
                   }`}
                 >
-                  <div class="font-semibold text-slate-100">{p.label}</div>
-                  <div class="text-xs text-slate-400 mt-1">{p.description}</div>
+                  <div class="font-semibold text-slate-100">{dict().difficulty[p.key]}</div>
+                  <div class="text-xs text-slate-400 mt-1">{dict().difficulty[`${p.key}Desc` as const]}</div>
                 </button>
               )}
             </For>
@@ -110,8 +108,8 @@ export default function ClassicSingleOptions() {
                   : 'border-slate-700 bg-slate-900 hover:border-slate-500'
               }`}
             >
-              <div class="font-semibold text-slate-100">커스텀</div>
-              <div class="text-xs text-slate-400 mt-1">직접 ELO/시간 지정</div>
+              <div class="font-semibold text-slate-100">{dict().difficulty.custom}</div>
+              <div class="text-xs text-slate-400 mt-1">{dict().difficulty.customDesc}</div>
             </button>
           </div>
         </section>
@@ -131,7 +129,9 @@ export default function ClassicSingleOptions() {
               />
             </label>
             <label class="flex flex-col gap-1">
-              <span class="text-sm text-slate-300">사고 시간 ({thinkMs()}ms)</span>
+              <span class="text-sm text-slate-300">
+                {settings.locale === 'ko' ? '사고 시간' : 'Think Time'} ({thinkMs()}ms)
+              </span>
               <input
                 type="range"
                 min="100"
@@ -159,24 +159,24 @@ export default function ClassicSingleOptions() {
 
         <section>
           <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-400 mb-3">
-            시간 제어
+            {dict().classicOptions.timeControl}
           </h2>
           <div class="flex gap-2 flex-wrap mb-2">
-            <For each={TIME_PRESETS}>
-              {(p) => (
+            <For each={TIME_PRESETS_KEYS}>
+              {(key) => (
                 <button
                   type="button"
                   onClick={() => {
                     setTimeKind('preset');
-                    setTimePreset(p.key);
+                    setTimePreset(key);
                   }}
                   class={`px-3 py-1.5 rounded-md text-sm border ${
-                    timeKind() === 'preset' && timePreset() === p.key
+                    timeKind() === 'preset' && timePreset() === key
                       ? 'border-amber-400 bg-amber-500/10 text-slate-100'
                       : 'border-slate-700 text-slate-300 hover:border-slate-500'
                   }`}
                 >
-                  {p.label}
+                  {dict().classicOptions.presets[key]}
                 </button>
               )}
             </For>
@@ -189,7 +189,7 @@ export default function ClassicSingleOptions() {
                   : 'border-slate-700 text-slate-300 hover:border-slate-500'
               }`}
             >
-              무제한
+              {dict().classicOptions.unlimited}
             </button>
             <button
               type="button"
@@ -200,13 +200,15 @@ export default function ClassicSingleOptions() {
                   : 'border-slate-700 text-slate-300 hover:border-slate-500'
               }`}
             >
-              커스텀
+              {dict().classicOptions.custom}
             </button>
           </div>
           <Show when={timeKind() === 'custom'}>
             <div class="flex flex-col gap-2 border border-slate-700 rounded-lg p-3 bg-slate-900/50">
               <label class="flex flex-col gap-1">
-                <span class="text-sm text-slate-300">초기 시간 ({customInitialSec()}초)</span>
+                <span class="text-sm text-slate-300">
+                  {dict().classicOptions.initialSec} ({customInitialSec()}{dict().classicOptions.seconds})
+                </span>
                 <input
                   type="range"
                   min="30"
@@ -218,7 +220,9 @@ export default function ClassicSingleOptions() {
                 />
               </label>
               <label class="flex flex-col gap-1">
-                <span class="text-sm text-slate-300">증분 ({customIncrementSec()}초)</span>
+                <span class="text-sm text-slate-300">
+                  {dict().classicOptions.incrementSec} ({customIncrementSec()}{dict().classicOptions.seconds})
+                </span>
                 <input
                   type="range"
                   min="0"
@@ -235,30 +239,37 @@ export default function ClassicSingleOptions() {
 
         <section>
           <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-400 mb-3">
-            플레이어 색상
+            {dict().classicOptions.colorHeading}
           </h2>
           <div class="flex gap-2">
-            <For each={COLOR_CHOICES}>
-              {(c) => (
-                <button
-                  type="button"
-                  onClick={() => setColor(c.key)}
-                  class={`px-4 py-2 rounded-md text-sm border ${
-                    color() === c.key
-                      ? 'border-amber-400 bg-amber-500/10 text-slate-100'
-                      : 'border-slate-700 text-slate-300 hover:border-slate-500'
-                  }`}
-                >
-                  {c.label}
-                </button>
-              )}
+            <For each={COLOR_CHOICES_KEYS}>
+              {(key) => {
+                const colorLabel = () => {
+                  if (key === 'w') return dict().classicOptions.colorWhite;
+                  if (key === 'b') return dict().classicOptions.colorBlack;
+                  return dict().classicOptions.colorRandom;
+                };
+                return (
+                  <button
+                    type="button"
+                    onClick={() => setColor(key)}
+                    class={`px-4 py-2 rounded-md text-sm border ${
+                      color() === key
+                        ? 'border-amber-400 bg-amber-500/10 text-slate-100'
+                        : 'border-slate-700 text-slate-300 hover:border-slate-500'
+                    }`}
+                  >
+                    {colorLabel()}
+                  </button>
+                );
+              }}
             </For>
           </div>
         </section>
 
         <section class="flex flex-col gap-3">
           <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-400">
-            보조 기능
+            {dict().classicOptions.auxHeading}
           </h2>
           <label class="flex items-center gap-2">
             <input
@@ -267,11 +278,11 @@ export default function ClassicSingleOptions() {
               onChange={(e) => setHintsEnabled(e.currentTarget.checked)}
               class="accent-amber-500"
             />
-            <span class="text-sm text-slate-200">힌트 사용</span>
+            <span class="text-sm text-slate-200">{dict().classicOptions.enableHints}</span>
           </label>
           <label class="flex flex-col gap-1">
             <span class="text-sm text-slate-300">
-              무르기 허용 횟수 ({undoLimit() === -1 ? '무제한' : undoLimit() === 0 ? '비활성' : `${undoLimit()}회`})
+              {dict().classicOptions.undoCount} ({undoLimit() === -1 ? dict().classicOptions.undoUnlimited : undoLimit() === 0 ? dict().classicOptions.undoDisabled : (settings.locale === 'ko' ? `${undoLimit()}회` : `${undoLimit()} times`)})
             </span>
             <input
               type="range"
@@ -287,9 +298,9 @@ export default function ClassicSingleOptions() {
 
         <div class="flex justify-end gap-2 pt-2">
           <Button variant="ghost" onClick={() => navigate('/classic')}>
-            취소
+            {dict().classicOptions.cancel}
           </Button>
-          <Button onClick={start}>게임 시작</Button>
+          <Button onClick={start}>{dict().classicOptions.startGame}</Button>
         </div>
       </main>
     </div>

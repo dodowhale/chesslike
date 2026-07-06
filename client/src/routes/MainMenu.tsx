@@ -61,7 +61,7 @@ export default function MainMenu() {
           <span class="text-amber-400 tabular-nums">
             {metaSignal()?.totalStarShards ?? 0}
           </span>{' '}
-          · 메타 진행 →
+          · {dict().menu.meta} →
         </button>
         <span>
           {dict().menu.build} {BUILD_VERSION}

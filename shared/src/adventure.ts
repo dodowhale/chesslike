@@ -36,6 +36,13 @@ export interface PieceLoadout {
   startingItems?: Item[];
 }
 
+export interface PieceSkill {
+  name: string;
+  cooldownTurns: number;
+  currentCooldown: number;
+  hasUsedThisMatch: boolean;
+}
+
 export interface Piece {
   id: string;
   type: PieceType;
@@ -44,6 +51,7 @@ export interface Piece {
   maxHp: number;
   attack: number;
   items: Item[];
+  skill?: PieceSkill;
 }
 
 export interface Passive {

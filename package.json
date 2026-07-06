@@ -10,11 +10,17 @@
   ],
   "scripts": {
     "dev": "bun --filter @chesslike/client dev",
+    "dev:server": "bun --filter @chesslike/server dev",
+    "dev:all": "bun --filter '*' dev",
     "build": "bun --filter @chesslike/client build",
     "preview": "bun --filter @chesslike/client preview",
     "typecheck": "bun --filter '*' typecheck",
+    "test": "bun test",
     "gen:placeholders": "bun scripts/generate-piece-placeholders.ts",
     "gen:stockfish": "bun scripts/copy-stockfish.ts",
     "postinstall": "bun scripts/copy-stockfish.ts"
+  },
+  "devDependencies": {
+    "bun-types": "^1.3.14"
   }
 }

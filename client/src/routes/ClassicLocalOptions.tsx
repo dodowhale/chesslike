@@ -5,11 +5,11 @@ import { Button } from '@/components/ui/Button';
 import { t } from '@/lib/i18n';
 import { setClassicConfig, setMode } from '@/store/gameStore';
 
-const TIME_PRESETS: { key: ClassicTimeControl['preset']; label: string }[] = [
-  { key: 'bullet', label: '불릿 (1분)' },
-  { key: 'blitz', label: '블리츠 (3분 + 2초)' },
-  { key: 'rapid', label: '래피드 (10분 + 5초)' },
-  { key: 'classical', label: '클래시컬 (30분)' },
+const TIME_PRESETS_KEYS: Exclude<ClassicTimeControl['preset'], undefined>[] = [
+  'bullet',
+  'blitz',
+  'rapid',
+  'classical',
 ];
 
 export default function ClassicLocalOptions() {
@@ -62,24 +62,24 @@ export default function ClassicLocalOptions() {
       <main class="flex-1 max-w-2xl mx-auto w-full px-4 py-6 flex flex-col gap-6">
         <section>
           <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-400 mb-3">
-            시간 제어
+            {dict().classicOptions.timeControl}
           </h2>
           <div class="flex gap-2 flex-wrap mb-2">
-            <For each={TIME_PRESETS}>
-              {(p) => (
+            <For each={TIME_PRESETS_KEYS}>
+              {(key) => (
                 <button
                   type="button"
                   onClick={() => {
                     setTimeKind('preset');
-                    setTimePreset(p.key);
+                    setTimePreset(key);
                   }}
                   class={`px-3 py-1.5 rounded-md text-sm border ${
-                    timeKind() === 'preset' && timePreset() === p.key
+                    timeKind() === 'preset' && timePreset() === key
                       ? 'border-amber-400 bg-amber-500/10 text-slate-100'
                       : 'border-slate-700 text-slate-300 hover:border-slate-500'
                   }`}
                 >
-                  {p.label}
+                  {dict().classicOptions.presets[key]}
                 </button>
               )}
             </For>
@@ -92,7 +92,7 @@ export default function ClassicLocalOptions() {
                   : 'border-slate-700 text-slate-300 hover:border-slate-500'
               }`}
             >
-              무제한
+              {dict().classicOptions.unlimited}
             </button>
             <button
               type="button"
@@ -103,13 +103,15 @@ export default function ClassicLocalOptions() {
                   : 'border-slate-700 text-slate-300 hover:border-slate-500'
               }`}
             >
-              커스텀
+              {dict().classicOptions.custom}
             </button>
           </div>
           <Show when={timeKind() === 'custom'}>
             <div class="flex flex-col gap-2 border border-slate-700 rounded-lg p-3 bg-slate-900/50">
               <label class="flex flex-col gap-1">
-                <span class="text-sm text-slate-300">초기 시간 ({customInitialSec()}초)</span>
+                <span class="text-sm text-slate-300">
+                  {dict().classicOptions.initialSec} ({customInitialSec()}{dict().classicOptions.seconds})
+                </span>
                 <input
                   type="range"
                   min="30"
@@ -121,7 +123,9 @@ export default function ClassicLocalOptions() {
                 />
               </label>
               <label class="flex flex-col gap-1">
-                <span class="text-sm text-slate-300">증분 ({customIncrementSec()}초)</span>
+                <span class="text-sm text-slate-300">
+                  {dict().classicOptions.incrementSec} ({customIncrementSec()}{dict().classicOptions.seconds})
+                </span>
                 <input
                   type="range"
                   min="0"
@@ -138,7 +142,7 @@ export default function ClassicLocalOptions() {
 
         <section class="flex flex-col gap-3">
           <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-400">
-            핫시트 옵션
+            {dict().classicOptions.hotseatHeading}
           </h2>
           <label class="flex items-center gap-2 cursor-pointer">
             <input
@@ -147,7 +151,7 @@ export default function ClassicLocalOptions() {
               onChange={(e) => setAutoRotate(e.currentTarget.checked)}
               class="accent-amber-500"
             />
-            <span class="text-sm text-slate-200">차례마다 보드 자동 회전</span>
+            <span class="text-sm text-slate-200">{dict().classicOptions.rotateBoard}</span>
           </label>
           <label class="flex items-center gap-2 cursor-pointer">
             <input
@@ -156,7 +160,7 @@ export default function ClassicLocalOptions() {
               onChange={(e) => setAllowUndo(e.currentTarget.checked)}
               class="accent-amber-500"
             />
-            <span class="text-sm text-slate-200">무르기 허용 (양측 합의)</span>
+            <span class="text-sm text-slate-200">{dict().classicOptions.allowUndo}</span>
           </label>
           <label class="flex items-center gap-2 cursor-pointer">
             <input
@@ -165,15 +169,15 @@ export default function ClassicLocalOptions() {
               onChange={(e) => setAllowDrawOffer(e.currentTarget.checked)}
               class="accent-amber-500"
             />
-            <span class="text-sm text-slate-200">무승부 제안 허용</span>
+            <span class="text-sm text-slate-200">{dict().classicOptions.allowDrawOffer}</span>
           </label>
         </section>
 
         <div class="flex justify-end gap-2 pt-2">
           <Button variant="ghost" onClick={() => navigate('/classic')}>
-            취소
+            {dict().classicOptions.cancel}
           </Button>
-          <Button onClick={start}>게임 시작</Button>
+          <Button onClick={start}>{dict().classicOptions.startGame}</Button>
         </div>
       </main>
     </div>

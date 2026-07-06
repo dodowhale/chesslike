@@ -33,3 +33,9 @@ Thumbs.db
 .vscode/
 .idea/
 *.swp
+
+# SQLite local databases
+*.db
+*.db-journal
+*.db-wal
+*.db-shm

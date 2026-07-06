@@ -11,10 +11,10 @@
 본 섹션은 Antigravity CLI 특유의 동작 방식(Planning Mode, Artifacts 등)과 관련된 지침을 정의합니다. 프로젝트 공통 비즈니스 로직 및 컨셉은 모두 `AGENTS.md`를 참조하세요.
 
 ### 1. Planning Mode & Artifacts
-* **계획 우선**: 복잡한 변경이 필요할 경우 코드 수정 전에 [implementation_plan.md](file:///Users/east/.gemini/antigravity-cli/brain/80e2ed2e-ef19-4c32-8c04-e5bd0dd571e6/implementation_plan.md)를 작성하고, `request_feedback`을 활성화하여 사용자의 명시적인 승인을 얻으세요.
-* **작업 추적**: 승인 후 작업 시에는 [task.md](file:///Users/east/.gemini/antigravity-cli/brain/80e2ed2e-ef19-4c32-8c04-e5bd0dd571e6/task.md)를 활용하여 TODO를 관리하세요.
-* **작업 완료 후**: 완료 시에는 변경 사항과 테스트 결과를 요약한 [walkthrough.md](file:///Users/east/.gemini/antigravity-cli/brain/80e2ed2e-ef19-4c32-8c04-e5bd0dd571e6/walkthrough.md)를 생성 또는 업데이트하세요.
-* **경로 주의**: Artifacts는 `/Users/east/.gemini/antigravity-cli/brain/80e2ed2e-ef19-4c32-8c04-e5bd0dd571e6/` 내에 작성되어야 합니다.
+* **계획 우선**: 복잡한 변경이 필요할 경우 코드 수정 전에 `implementation_plan.md`(아티팩트 디렉토리 아래)를 작성하고, `request_feedback`을 활성화하여 사용자의 명시적인 승인을 얻으세요.
+* **작업 추적**: 승인 후 작업 시에는 `task.md`를 활용하여 TODO를 관리하세요.
+* **작업 완료 후**: 완료 시에는 변경 사항과 테스트 결과를 요약한 `walkthrough.md`를 생성 또는 업데이트하세요.
+* **경로 주의**: Artifacts는 현재 대화의 아티팩트 디렉토리(`<appDataDir>/brain/<conversation-id>/`) 내에 작성되어야 합니다.
 
 ### 2. Antigravity 도구 사용 권장
 * **Bun 환경 준수**: 터미널 명령을 제안할 때는 Bun을 사용하세요. (예: `bun run ...`)

@@ -9,12 +9,7 @@ import {
   type UnlockEntry,
 } from '@/lib/adventure/data/unlocks';
 import { ensureMetaLoaded, metaSignal, updateMeta } from '@/store/metaStore';
-
-const CATEGORY_LABELS: Record<UnlockCategory, string> = {
-  character: '캐릭터',
-  item: '아이템 풀',
-  bonus: '영구 장식품',
-};
+import { t } from '@/lib/i18n';
 
 const CATEGORY_ORDER: UnlockCategory[] = ['character', 'item', 'bonus'];
 
@@ -22,6 +17,7 @@ export default function MetaProgressRoute() {
   const navigate = useNavigate();
   const [purchasing, setPurchasing] = createSignal<string | null>(null);
   const [confirmTarget, setConfirmTarget] = createSignal<UnlockEntry | null>(null);
+  const dict = () => t();
 
   onMount(() => {
     void ensureMetaLoaded();
@@ -102,16 +98,18 @@ export default function MetaProgressRoute() {
   }
 
   return (
-    <div class="min-h-screen flex flex-col">
-      <header class="flex items-center justify-between px-4 py-3 border-b border-slate-800">
+    <div class="min-h-screen flex flex-col bg-slate-950 text-slate-100">
+      <header class="flex items-center justify-between px-4 py-3 border-b border-slate-800 bg-slate-900/50 backdrop-blur-md sticky top-0 z-10">
         <div class="flex items-center gap-3">
-          <Button variant="ghost" onClick={() => navigate('/')}>
-            ← 메인 메뉴
+          <Button variant="ghost" class="hover:bg-slate-800 text-slate-300" onClick={() => navigate('/')}>
+            ← {dict().meta.back}
           </Button>
-          <span class="font-semibold">메타 진행</span>
+          <span class="font-bold text-lg tracking-wide bg-gradient-to-r from-teal-400 to-emerald-400 bg-clip-text text-transparent">
+            {dict().meta.title}
+          </span>
         </div>
-        <span class="text-sm text-amber-400">
-          ⭐ 별의 조각{' '}
+        <span class="text-sm text-amber-400 font-medium">
+          ⭐ {dict().meta.starShards}{' '}
           <span class="font-mono tabular-nums">
             {metaSignal()?.totalStarShards ?? 0}
           </span>
@@ -120,13 +118,13 @@ export default function MetaProgressRoute() {
       <main class="flex-1 max-w-3xl mx-auto w-full px-4 py-6 flex flex-col gap-6">
         <Show
           when={metaSignal()}
-          fallback={<p class="text-slate-400 text-sm">메타 진행 로딩 중…</p>}
+          fallback={<p class="text-slate-400 text-sm">{dict().meta.loading}</p>}
         >
           <For each={CATEGORY_ORDER}>
             {(cat) => (
-              <section class="flex flex-col gap-2">
-                <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-400">
-                  {CATEGORY_LABELS[cat]}
+              <section class="flex flex-col gap-3">
+                <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-400">
+                  {dict().meta.categories[cat]}
                 </h2>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <For each={entriesByCategory(cat)}>
@@ -136,42 +134,44 @@ export default function MetaProgressRoute() {
                         (metaSignal()?.totalStarShards ?? 0) >= entry.cost;
                       return (
                         <div
-                          class={`flex flex-col gap-2 p-3 rounded-lg border ${
+                          class={`flex flex-col gap-2 p-4 rounded-xl border transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg ${
                             unlocked()
-                              ? 'border-emerald-500/50 bg-emerald-500/10'
+                              ? 'border-emerald-500/30 bg-gradient-to-br from-slate-900 to-emerald-950/20'
                               : canAfford()
-                                ? 'border-amber-500/40 bg-slate-900'
-                                : 'border-slate-700 bg-slate-900/50'
+                                ? 'border-amber-500/40 bg-slate-900/60 hover:border-amber-500/60'
+                                : 'border-slate-800 bg-slate-900/30 hover:border-slate-700/50'
                           }`}
                         >
                           <div class="flex items-center justify-between">
-                            <span class="font-semibold text-slate-100">
+                            <span class="font-bold text-slate-100 font-medium">
                               {entry.name}
                             </span>
                             <Show
                               when={unlocked()}
                               fallback={
-                                <span class="text-xs text-amber-400">
+                                <span class="text-xs font-semibold text-amber-400 bg-amber-950/30 px-2 py-0.5 rounded-full">
                                   ⭐ {entry.cost}
                                 </span>
                               }
                             >
-                              <span class="text-xs text-emerald-400">해금됨</span>
+                              <span class="text-xs font-semibold text-emerald-400 bg-emerald-950/40 px-2 py-0.5 rounded-full">
+                                {dict().meta.unlocked}
+                              </span>
                             </Show>
                           </div>
-                          <p class="text-xs text-slate-300">{entry.description}</p>
+                          <p class="text-xs text-slate-300 leading-relaxed min-h-[32px]">{entry.description}</p>
                           <Show when={!unlocked()}>
                             <Button
                               variant={canAfford() ? 'primary' : 'secondary'}
                               onClick={() => requestPurchase(entry)}
-                              class="text-xs"
+                              class="text-xs w-full py-2"
                               disabled={!canAfford() || purchasing() === entry.id}
                             >
                               {purchasing() === entry.id
-                                ? '구매 중…'
+                                ? dict().meta.purchasing
                                 : canAfford()
-                                  ? '잠금해제'
-                                  : '조각 부족'}
+                                  ? dict().meta.unlock
+                                  : dict().meta.insufficient}
                             </Button>
                           </Show>
                         </div>
@@ -187,24 +187,25 @@ export default function MetaProgressRoute() {
       <Modal
         open={!!confirmTarget()}
         onClose={() => setConfirmTarget(null)}
-        title="잠금해제 확인"
+        title={dict().meta.confirmTitle}
       >
         <Show when={confirmTarget()}>
           {(t) => (
             <div class="flex flex-col gap-3">
               <p class="text-sm text-slate-300">
-                <b class="text-amber-300">{t().name}</b>을(를) ⭐ {t().cost}조각으로
-                해금합니다.
+                {dict().meta.confirmBody
+                  .replace('{name}', t().name)
+                  .replace('{cost}', String(t().cost))}
               </p>
               <p class="text-xs text-slate-400">{t().description}</p>
-              <div class="flex justify-end gap-2 mt-2">
+              <div class="flex justify-end gap-2 mt-4">
                 <Button
                   variant="ghost"
                   onClick={() => setConfirmTarget(null)}
                 >
-                  취소
+                  {dict().meta.cancel}
                 </Button>
-                <Button onClick={() => void confirmPurchase(t())}>해금</Button>
+                <Button onClick={() => void confirmPurchase(t())}>{dict().meta.unlock}</Button>
               </div>
             </div>
           )}

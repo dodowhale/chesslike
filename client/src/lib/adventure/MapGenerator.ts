@@ -100,8 +100,14 @@ export function generateAct(opts: GenerateActOptions): GeneratedMap {
     for (let i = 0; i < cur.length; i++) {
       const node = cur[i]!;
       // 인덱스 i 기준 ±1 범위의 다음 행 노드를 연결
-      const lo = Math.max(0, i - 1);
-      const hi = Math.min(next.length - 1, i + 1);
+      let lo = Math.max(0, i - 1);
+      let hi = Math.min(next.length - 1, i + 1);
+      
+      if (lo > hi) {
+        lo = next.length - 1;
+        hi = next.length - 1;
+      }
+
       const connections = new Set<string>();
       // 적어도 하나는 연결 (정렬된 자연 후보)
       for (let j = lo; j <= hi; j++) {

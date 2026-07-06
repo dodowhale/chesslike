@@ -4,6 +4,9 @@
   "workspaces": {
     "": {
       "name": "chesslike",
+      "devDependencies": {
+        "bun-types": "^1.3.14",
+      },
     },
     "client": {
       "name": "@chesslike/client",

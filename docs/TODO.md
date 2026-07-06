@@ -188,7 +188,7 @@
 - [ ] HistoryEntry 클라우드 동기화 (옵션)
 
 ### 코드 — 품질
-- [ ] 단위 테스트 (Vitest/Bun test) — ChessManager, AdventureChessManager, MapGenerator, rollItems 가중치 분포
+- [x] 단위 테스트 (Bun test) — MapGenerator, achievementUnlock 완료 (ChessManager 등 후속)
 - [ ] E2E 테스트 (Playwright) — 클래식 싱글 5수, 로컬멀티 합의 흐름, 모험 1막 클리어
 - [ ] CI (GitHub Actions) — typecheck + test + build
 - [ ] 코드 스플릿 — 현재 `ClassicSinglePlay` 1.5MB 청크(Phaser+Stockfish 임포트) 분리
@@ -209,6 +209,7 @@
 - [ ] 이벤트/아이템/캐릭터 다국어 (현재 한국어 고정 텍스트) — 신규 UI 키 ko/en만 반영, 이벤트/아이템/캐릭터 본문 다국어는 미정
 - [x] 도움말 화면 `/help` (룰/조작/접근성) + HeaderBar ❓ 진입점
 - [x] dev `__chesslike` 정식화 (`client/src/lib/devApi.ts` + `ChesslikeDevApi` 타입) — 디버그 패널 UI는 후속
+- [x] dev:server, dev:all, test 통합 스크립트 추가 및 개발 환경 DX 보강
 - [x] CHANGELOG.md 도입 (Keep-a-Changelog, M0~M5 요약 + Unreleased)
 
 ## 참고

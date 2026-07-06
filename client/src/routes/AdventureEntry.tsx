@@ -11,6 +11,7 @@ import { AdventureRunController } from '@/lib/controllers/AdventureSceneControll
 import { setActiveRun } from '@/store/adventureStore';
 import { clearPersistedRun, loadPersistedRun } from '@/lib/adventure/runPersist';
 import { ensureMetaLoaded, metaSignal } from '@/store/metaStore';
+import { settings } from '@/store/settingsStore';
 
 export default function AdventureEntry() {
   const navigate = useNavigate();
@@ -65,27 +66,26 @@ export default function AdventureEntry() {
           {(run) => (
             <section class="p-4 border-2 border-amber-500/50 bg-amber-500/10 rounded-lg flex items-center justify-between gap-3">
               <div>
-                <h3 class="font-semibold text-amber-200">진행 중인 런</h3>
+                <h3 class="font-semibold text-amber-200">{dict().adventure.resumeRun}</h3>
                 <p class="text-xs text-slate-300 mt-1">
-                  {run().act}막 · 완료 노드{' '}
-                  {run().map.filter((n) => n.isCompleted).length} / {run().map.length} · 별의 조각{' '}
+                  {settings.locale === 'ko' ? `${run().act}막 · 완료 노드` : `Act ${run().act} · Completed Nodes`}{' '}
+                  {run().map.filter((n) => n.isCompleted).length} / {run().map.length} · {dict().menu.starShards}{' '}
                   {run().starShardsThisRun}
                 </p>
               </div>
               <div class="flex gap-2">
-                <Button onClick={resumeRun}>이어하기</Button>
+                <Button onClick={resumeRun}>{dict().adventure.resume}</Button>
                 <Button variant="secondary" onClick={() => void discardRun()}>
-                  폐기
+                  {dict().adventure.discard}
                 </Button>
               </div>
             </section>
           )}
         </Show>
         <section>
-          <h2 class="text-2xl font-bold text-amber-400 mb-2">캐릭터 선택</h2>
+          <h2 class="text-2xl font-bold text-amber-400 mb-2">{dict().adventure.characterSelect}</h2>
           <p class="text-sm text-slate-400">
-            한 번의 런으로 1막 보스 클리어를 목표로 합니다. 별의 조각으로 다음 런이
-            점점 강화됩니다.
+            {dict().adventure.characterSelectDesc}
           </p>
         </section>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -107,12 +107,20 @@ export default function AdventureEntry() {
                 </div>
                 <div class="flex flex-col gap-1 justify-center">
                   <div class="flex items-center gap-2">
-                    <span class="text-lg font-bold text-slate-100">{character.name}</span>
+                    <span class="text-lg font-bold text-slate-100">
+                      {character.id === 'standard' || character.id === 'assassins' || character.id === 'saints'
+                        ? dict().characters[character.id]
+                        : character.name}
+                    </span>
                     {!character.isUnlocked && (
-                      <span class="text-xs text-slate-400 font-normal">잠김 (메타 진행에서 해금)</span>
+                      <span class="text-xs text-slate-400 font-normal">{dict().adventure.locked}</span>
                     )}
                   </div>
-                  <p class="text-xs text-slate-300 line-clamp-2">{character.description}</p>
+                  <p class="text-xs text-slate-300 line-clamp-2">
+                    {character.id === 'standard' || character.id === 'assassins' || character.id === 'saints'
+                      ? dict().characters[`${character.id}Desc` as const]
+                      : character.description}
+                  </p>
                 </div>
               </button>
             )}

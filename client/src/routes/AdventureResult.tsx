@@ -1,4 +1,4 @@
-import { Show, createSignal, onMount } from 'solid-js';
+import { Show, createSignal, onMount, onCleanup } from 'solid-js';
 import { useLocation, useNavigate } from '@solidjs/router';
 import { Button } from '@/components/ui/Button';
 import { activeRun, setActiveRun } from '@/store/adventureStore';
@@ -14,6 +14,8 @@ import { evaluateAchievementsOnRunEnd } from '@/lib/adventure/achievementUnlock'
 import { recordRunEnd } from '@/lib/storage/runStatsRepo';
 import type { AchievementDef } from '@/lib/adventure/data/achievements';
 import { submitScore, reportAchievementToServer } from '@/lib/platform/serverApi';
+import { t } from '@/lib/i18n';
+import { settings } from '@/store/settingsStore';
 
 interface ActSummary {
   act: 1 | 2 | 3;
@@ -24,6 +26,7 @@ interface ActSummary {
 export default function AdventureResult() {
   const navigate = useNavigate();
   const location = useLocation();
+  const dict = () => t();
   const outcome = () =>
     location.query.outcome === 'victory' ? 'victory' : 'defeat';
   const [unlocked, setUnlocked] = createSignal<AchievementDef[]>([]);
@@ -31,8 +34,17 @@ export default function AdventureResult() {
   const [submitted, setSubmitted] = createSignal(false);
   const [isSubmitting, setIsSubmitting] = createSignal(false);
   const [errorMessage, setErrorMessage] = createSignal<string | null>(null);
+  const [isOnline, setIsOnline] = createSignal(navigator.onLine);
 
   onMount(async () => {
+    const updateOnlineStatus = () => setIsOnline(navigator.onLine);
+    window.addEventListener('online', updateOnlineStatus);
+    window.addEventListener('offline', updateOnlineStatus);
+    onCleanup(() => {
+      window.removeEventListener('online', updateOnlineStatus);
+      window.removeEventListener('offline', updateOnlineStatus);
+    });
+
     const c = activeRun();
     if (!c) {
       navigate('/adventure', { replace: true });
@@ -70,7 +82,7 @@ export default function AdventureResult() {
   async function handleRegisterLeaderboard() {
     const name = nickname().trim();
     if (!name) {
-      setErrorMessage('닉네임을 입력해주세요.');
+      setErrorMessage(dict().adventure.result.enterNicknameError);
       return;
     }
     const c = activeRun();
@@ -92,7 +104,7 @@ export default function AdventureResult() {
       });
 
       if (!success) {
-        throw new Error('서버 등록에 실패했습니다.');
+        throw new Error(dict().adventure.result.serverOfflineError);
       }
 
       // 2. 획득한 도전과제가 있다면 서버에 등록
@@ -105,7 +117,7 @@ export default function AdventureResult() {
 
       setSubmitted(true);
     } catch (err) {
-      setErrorMessage(err instanceof Error ? err.message : '등록에 실패했습니다.');
+      setErrorMessage(err instanceof Error ? err.message : dict().adventure.result.serverError);
     } finally {
       setIsSubmitting(false);
     }
@@ -139,7 +151,7 @@ export default function AdventureResult() {
         <h1 class={`text-4xl font-extrabold tracking-tight bg-gradient-to-r bg-clip-text text-transparent ${
           outcome() === 'victory' ? 'from-yellow-400 to-amber-500' : 'from-red-400 to-rose-600'
         }`}>
-          {outcome() === 'victory' ? '런 성공 — 보스 클리어' : '런 실패'}
+          {outcome() === 'victory' ? dict().adventure.result.victory : dict().adventure.result.defeat}
         </h1>
       </div>
 
@@ -149,19 +161,19 @@ export default function AdventureResult() {
             {/* Stat Cards */}
             <div class="grid grid-cols-2 gap-3">
               <div class="p-4 rounded-xl border border-slate-800 bg-slate-900/60 text-center">
-                <span class="text-xs text-slate-400 block mb-1">완료 노드</span>
+                <span class="text-xs text-slate-400 block mb-1">{dict().adventure.result.completedNodes}</span>
                 <span class="text-2xl font-bold font-mono text-slate-100">
                   {run().map.filter((n) => n.isCompleted).length} / {run().map.length}
                 </span>
               </div>
               <div class="p-4 rounded-xl border border-slate-800 bg-slate-900/60 text-center">
-                <span class="text-xs text-slate-400 block mb-1">잔여 골드</span>
+                <span class="text-xs text-slate-400 block mb-1">{dict().adventure.result.remainingGold}</span>
                 <span class="text-2xl font-bold font-mono text-amber-500">🪙 {run().gold}</span>
               </div>
             </div>
 
             <div class="p-4 rounded-xl border border-emerald-500/20 bg-gradient-to-br from-slate-900 to-emerald-950/20 text-center">
-              <span class="text-xs text-emerald-400 font-semibold uppercase tracking-wider block mb-1">획득한 별의 조각</span>
+              <span class="text-xs text-emerald-400 font-semibold uppercase tracking-wider block mb-1">{dict().adventure.result.thisRunShards}</span>
               <span class="text-3xl font-extrabold font-mono text-emerald-400">
                 +⭐ {run().starShardsThisRun}
               </span>
@@ -169,13 +181,15 @@ export default function AdventureResult() {
 
             {/* Act Progress Detail */}
             <div class="rounded-xl border border-slate-800 bg-slate-900/40 p-4 flex flex-col gap-3">
-              <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">막별 진행</p>
+              <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">{dict().adventure.result.byActHeading}</p>
               <ul class="flex flex-col gap-2 text-slate-200">
                 {actSummaries(run()).map((s) => (
                   <li class="flex items-center justify-between pb-1 border-b border-slate-800/40 last:border-b-0 last:pb-0">
-                    <span class="font-medium">{s.act}막</span>
+                    <span class="font-medium">
+                      {settings.locale === 'ko' ? `${s.act}막` : `Act ${s.act}`}
+                    </span>
                     <span class="font-mono tabular-nums text-slate-300">
-                      {s.total === 0 ? '미도달' : `${s.completed} / ${s.total}`}
+                      {s.total === 0 ? dict().adventure.result.actUnreached : `${s.completed} / ${s.total}`}
                     </span>
                   </li>
                 ))}
@@ -186,7 +200,7 @@ export default function AdventureResult() {
             <Show when={unlocked().length > 0}>
               <div class="rounded-xl border border-emerald-500/40 bg-emerald-950/20 p-4 flex flex-col gap-2">
                 <p class="text-xs font-semibold uppercase tracking-wider text-emerald-400">
-                  새로 잠금 해제된 도전과제
+                  {dict().adventure.result.newAchievements}
                 </p>
                 <ul class="flex flex-col gap-2 text-emerald-100">
                   {unlocked().map((a) => (
@@ -202,36 +216,45 @@ export default function AdventureResult() {
             {/* Leaderboard Submission Form */}
             <div class="rounded-xl border border-slate-800 bg-slate-900/60 p-5 flex flex-col gap-4">
               <h3 class="font-semibold text-slate-200 flex items-center gap-2">
-                🌐 글로벌 랭킹 등록
+                {dict().adventure.result.leaderboardTitle}
               </h3>
               
               <Show
                 when={!submitted()}
                 fallback={
                   <div class="text-center py-2 text-emerald-400 font-semibold flex items-center justify-center gap-2">
-                    ✅ 랭킹에 성공적으로 등록되었습니다!
+                    {dict().adventure.result.registerSuccess}
                   </div>
                 }
               >
                 <div class="flex flex-col gap-3">
-                  <div class="flex gap-2">
-                    <input
-                      type="text"
-                      placeholder="닉네임 입력 (최대 10자)"
-                      maxLength={10}
-                      value={nickname()}
-                      onInput={(e) => setNickname(e.currentTarget.value)}
-                      class="flex-1 px-4 py-2 rounded-lg border border-slate-800 bg-slate-950 text-slate-100 text-sm focus:outline-none focus:border-teal-500 transition-colors"
-                      disabled={isSubmitting()}
-                    />
-                    <Button
-                      onClick={handleRegisterLeaderboard}
-                      disabled={isSubmitting() || !nickname().trim()}
-                      class="px-5"
-                    >
-                      {isSubmitting() ? '등록 중...' : '등록'}
-                    </Button>
-                  </div>
+                  <Show
+                    when={isOnline()}
+                    fallback={
+                      <div class="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 text-xs text-amber-300">
+                        ⚠️ {dict().adventure.result.offlineModeNotice}
+                      </div>
+                    }
+                  >
+                    <div class="flex gap-2">
+                      <input
+                        type="text"
+                        placeholder={dict().adventure.result.nicknamePlaceholder}
+                        maxLength={10}
+                        value={nickname()}
+                        onInput={(e) => setNickname(e.currentTarget.value)}
+                        class="flex-1 px-4 py-2 rounded-lg border border-slate-800 bg-slate-950 text-slate-100 text-sm focus:outline-none focus:border-teal-500 transition-colors"
+                        disabled={isSubmitting()}
+                      />
+                      <Button
+                        onClick={handleRegisterLeaderboard}
+                        disabled={isSubmitting() || !nickname().trim()}
+                        class="px-5"
+                      >
+                        {isSubmitting() ? dict().adventure.result.registering : dict().adventure.result.register}
+                      </Button>
+                    </div>
+                  </Show>
                   <Show when={errorMessage()}>
                     <p class="text-xs text-red-400">{errorMessage()}</p>
                   </Show>
@@ -243,9 +266,9 @@ export default function AdventureResult() {
       </Show>
 
       <div class="flex gap-3">
-        <Button onClick={newRun} class="px-6 py-2.5">다음 런</Button>
+        <Button onClick={newRun} class="px-6 py-2.5">{dict().adventure.result.nextRun}</Button>
         <Button variant="secondary" onClick={homewards} class="px-6 py-2.5">
-          메인 메뉴
+          {dict().adventure.result.mainMenu}
         </Button>
       </div>
     </div>

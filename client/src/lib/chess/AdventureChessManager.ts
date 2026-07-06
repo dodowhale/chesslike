@@ -1,4 +1,4 @@
-import type { Piece as AdventurePiece, Modifier } from '@shared/adventure';
+import type { Piece as AdventurePiece, Modifier, PieceSkill } from '@shared/adventure';
 import {
   createChessManager,
   type ChessManager,
@@ -18,13 +18,6 @@ import {
  *
  * 본 모듈은 도메인 로직만 제공하고, "패배/승리 전이"는 컨트롤러가 결정한다.
  */
-
-export interface PieceSkill {
-  name: string;
-  cooldownTurns: number;
-  currentCooldown: number;
-  hasUsedThisMatch: boolean;
-}
 
 export interface PieceState extends AdventurePiece {
   /** chess.js 좌표 (a8..h1). 무브 후 갱신된다. */

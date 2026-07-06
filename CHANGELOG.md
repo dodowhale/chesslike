@@ -16,7 +16,8 @@
 - HeaderBar 진입점: 📊 통계 활성화, ❓ 도움말 신규
 - 모험 결과 화면에 막별 진행 요약 + 새로 잠금 해제된 도전과제 카드
 - 보드 외곽 클릭 영역 확장 (HIT_PAD 12px) — 모바일 터치 친화
-- 신규 i18n 키 ko/en (`menu.help`, `adventure.result.*`, `stats.*`, `help.*`)
+- 신규 i18n 키 ko/en (`menu.help`, `adventure.result.*`, `stats.*`, `help.*`, `achievements.*`, `meta.*`, `difficulty.*`, `classicOptions.*`) 및 오프라인 상태 대응 키 추가.
+- 오프라인 모드(PWA 최적화) 지원 개선: 네트워크 또는 백엔드 서버가 구동 중이지 않은 오프라인 환경에서도 게임 결과가 로컬에 정상 보존(IndexedDB)되도록 랭킹 등록 실패 및 오프라인 상태(navigator.onLine) 감지 대응 UI(등록 비활성화 및 로컬 보존 안내 경고)를 AdventureResult.tsx에 추가하였으며, Stats.tsx의 글로벌 랭킹 화면에 서버 연결 실패 시 재시도 버튼과 친절한 오프라인 폴백 UI를 적용함.
 - dev `window.__chesslike` 정식 모듈 `client/src/lib/devApi.ts` (`ChesslikeDevApi` 타입 + `installDevApi`)
 - 본 문서 — CHANGELOG.md 도입
 - 정식 외부 자산 1차 도입 (ASSETS.md §11 발주 스펙 기준): 기물 36 PNG(placeholder generator 출력물 → 정식 도트 아트워크 교체), 노드 아이콘 6종 (`adventure/nodes/{battle,elite,shop,event,rest,boss}.png` 48×48), 보스 스프라이트 3종 (`adventure/bosses/act{1,2,3}.png` 96×96), 캐릭터 초상화 4종 (`adventure/characters/{standard,assassins,saints,locked}.png` 96×96), 아이템 아이콘 30종 (`adventure/items/{itemId}.png` 32×32 — 풀과 1:1 매칭), 막별 배경 3종 (`adventure/backgrounds/act{1,2,3}.png` 480×270). 기물 PNG는 BootScene이 같은 경로 preload라 즉시 보드에 반영, 나머지(노드/보스/캐릭터/아이템/배경)는 UI 통합 후속 사이클 대기.
@@ -24,6 +25,7 @@
 ### Changed
 - `BoardScene` 입력 처리: 셀별 `setInteractive` → 단일 zone 기반 입력 + `pixelToSquare` 역산. 인접 셀 hit 우선순위 모호함 제거.
 - `evaluateAchievementsOnRunEnd` 시그니처: 누적형 도전과제 평가를 위해 `RunStats` 인자 추가 (옵셔널, 기존 호출처 호환 유지).
+- 에이전트 가이드 템플릿화: `ANTIGRAVITY.md` 내의 하드코딩된 특정 대화 세션 ID를 `<conversation-id>` 템플릿으로 변경하여 여러 세션에서 범용적으로 유효하도록 수정.
 
 ### Fixed
 - 모험 모드 킹의 액티브 스킬 '왕의 진노'의 공격력 증가 버프가 턴 시작 즉시 제거되어 한 번도 공격에 적용되지 못하던 버그를 `tempAtkBonusTurns` 카운터를 도입하여 본인의 다음 턴 공격이 완료될 때까지 정상 유지되도록 수정.
@@ -33,6 +35,9 @@
 - 보스 king HP=0 직후 게임이 정지하던 버그. 원인: `AdventureChessManager.tryMove`가 king을 일반 capture 분기로 처리해 HP 0 이하 시 `chess.tryMove`로 실제 캡처를 시도했으나 chess.js가 king 캡처를 합법수로 인정하지 않아 무브가 fail → `attemptBoardMove`가 syncBoard/scheduleAiReply 없이 종료 → AI 응답 안 옴. 수정: `defender.type==='k'`이면 항상 damaged 분기 + HP 0 clamp + `swapTurnOnly`로 차례만 넘김. SPEC §4.2 "보스 KingHp=0은 약화의 자리표, 페이즈 종료는 체크메이트만"을 정확히 반영. 일반 노드 적 king은 `checkBoardEndCondition`의 `blackKingHp<=0` 분기로 즉시 종료됨.
 - 보스에서 사용자가 체크메이트를 만들어도 페이즈가 종료되지 않던 버그. 원인: `AdventureSceneController.checkBoardEndCondition`의 winner 계산이 정 반대(`turnAfterMove==='w'?'b':'w'`)였고, 호출처에서 `turnAfterMove` 인자의 의미가 일관되지 않아(attemptBoardMove의 'w' vs scheduleAiReply 무브-없음 분기의 'b') 사용자 무브로 만든 흑 체크메이트가 winner='b' → `finalize('defeat')`로 잘못 흘렀음. 보스는 KingHp 분기가 없어 isCheckmate 경로만 사용하므로 증상이 보스에서 두드러졌고 일반 노드는 KingHp<=0 분기에 가려져 있었음. 수정: `chess.turn()`(체크메이트당한 진영=loser) 기반으로 winner를 직접 계산, `turnAfterMove` 인자 제거.
 - 정의만 있고 실제로는 작동하지 않던 modifier들 정리. **변경 전**: `thornsDamage`(반사 아이템 7종 + 글로벌 1종), `healPerTurn`(아이템 측), `jumpOver`/`range`(knight-spurs)가 어디서도 처리되지 않아 사용자가 장착해도 효과 없음. **수정**: (a) `thornsDamage` 실 구현 — `AdventureChessManager.tryMove`의 damaged/captured 양쪽에서 `effectiveThornsDamage(defender, globalMods)`를 attacker.hp에서 차감 (본 사이클은 min 1 clamp, 상호 사망은 후속). (b) `healPerTurn` 아이템 합산 — `applyTurnStartHeal`이 각 piece의 장착·글로벌을 추가 합산. 캐릭터 패시브 healPerTurn은 그대로 합산. (c) `knight-spurs` 재설계 — chess.js 룰 확장이 필요한 jumpOver/range를 본 사이클에서 빼고, "박차 = 돌격 + 자기 방어" 메타포에 맞춰 `{ hp: 15, attack: 5, thornsDamage: 3 }` 복합 modifier로 변경. description "HP +15, 공격력 +5, 피격 시 반사 +3". uncommon 등급 안에서 royal-crown(hp20/atk5)·phoenix-feather(heal5)·thorn-mantle(thorns5)·titan-belt(hp15/atk3) 사이의 차별 포지션(stat + 작은 반사). 정식 점프 거리 +1 확장은 후속. (d) 반사 아이템 description "피격 시 반사 +X" 형식으로 통일(spike-helm·fang-amulet·thorn-mantle·ironbark-amulet·serpent-fang·phantom-cloak·eclipse-aegis). AdventureInventory의 jumpOver/range chip 제거 — 작동 안 하는 효과를 사용자에게 노출하지 않음.
+- 클라이언트 빌드 및 타입 오류 수정: `bun-types` 누락으로 인한 `bun:test` 임포트 오류(`TS2307`) 및 strict 옵션 하의 MapGenerator.test.ts 내 index reference `undefined` 가능성 오류(`TS2532`, `TS2322`)를 해결하여 `bun run typecheck` 및 `bun run build` 빌드 파이프라인을 완전 복구함.
+- 보안성 강화: 로컬 개발 시 생성될 수 있는 SQLite DB 파일들(`*.db`, `*.db-journal`, `*.db-wal`, `*.db-shm`)이 Git에 추적되지 않도록 루트 `.gitignore`에 무시 룰을 추가함.
+
 
 ### Notes
 - 본 사이클은 외부 자산 1차 도입(기물 + 노드/보스/캐릭터/아이템/배경 PNG)까지 포함. **BGM/SFX 음원**, 서버 인프라(SQLite/leaderboard/인증), 새 캐릭터(요새단/혼돈단), 테스트 자동화, 드래그·드롭 입력, 자산의 UI 통합(노드 아이콘·보스·캐릭터 초상화·아이템 카드·배경)은 별도 사이클에서 후속.
