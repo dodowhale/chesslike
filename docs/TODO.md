@@ -191,7 +191,8 @@
 ### 코드 — 품질
 - [x] 단위 테스트 (Bun test) — MapGenerator, achievementUnlock 완료 (ChessManager 등 후속)
 - [ ] E2E 테스트 (Playwright) — 클래식 싱글 5수, 로컬멀티 합의 흐름, 모험 1막 클리어
-- [ ] CI (GitHub Actions) — typecheck + test + build
+- [x] CI (GitHub Actions) — 배포 및 빌드 검증 파이프라인 (deploy.yml 완료)
+- [x] PWA 및 배포 — PWA 설치/오프라인 지원 및 GitHub Pages 배포 연동 완료
 - [x] 코드 스플릿 — 현재 `ClassicSinglePlay` 1.5MB 청크(Phaser+Stockfish 임포트) 분리
 - [ ] 번들 분석 (rollup-plugin-visualizer)
 - [ ] Lighthouse 모바일 점수 검증

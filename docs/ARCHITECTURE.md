@@ -366,7 +366,26 @@ await __chesslike.stats.load();
 
 별도 디버그 패널 UI는 후속 작업.
 
-## 8. 관련 문서
+## 8. 빌드 및 배포
+
+### 8.1 PWA (Progressive Web App)
+- **Web App Manifest**: `client/public/manifest.json`에서 테마 컬러, 백그라운드 컬러, 가로/세로 회전 모드(`orientation: "any"`), 독립 창 모드(`display: "standalone"`) 및 앱 아이콘을 정의합니다.
+- **Service Worker**: `client/public/sw.js`에서 캐시 수명 주기 관리 및 오프라인 기능을 보장합니다.
+  - core assets (`index.html`, `manifest.json`, PWA 아이콘) 및 로컬 Stockfish 웹 워커(`stockfish-18-lite-single.js`, `.wasm`)를 프리캐싱하여 네트워크가 연결되지 않은 상태에서도 오프라인 기동을 보장합니다.
+  - 빌드 시점에 해시명이 변경되는 JS/CSS 자산 등은 런타임 캐싱(Cache First + Network Revalidate) 방식을 사용해 점진적으로 동적 캐시됩니다.
+- **Service Worker Registration**: `client/index.html`에서 브라우저가 로드된 후 `./sw.js`를 등록합니다.
+
+### 8.2 빌드 설정 (Vite)
+- **Vite Base Path**: GitHub Pages 배포 서브디렉토리 경로(`/chesslike/`)에 대응하기 위해 `client/vite.config.ts`의 `base` 값을 `./` (상대 경로)로 설정합니다.
+- **Router Integration**: 새로고침 시 404 에러를 방지하기 위해 `@solidjs/router`의 `HashRouter`를 사용해 URL 해시 라우팅을 수행합니다.
+- **Version Dynamic Injection**: `client/package.json`의 버전 문자열을 읽어와 Vite `define` 설정을 통해 `import.meta.env.VITE_BUILD_VERSION`으로 주입하며, UI 메인 메뉴 하단에 동적으로 버전을 표시합니다.
+
+### 8.3 CI/CD 배포 (GitHub Actions)
+- **deploy.yml**: `.github/workflows/deploy.yml`을 사용하여 빌드 및 배포를 수행합니다.
+- **Release Trigger Rule**: 무분별한 빌드를 차단하고 명시적인 릴리즈 관리를 수행하기 위해, `client/package.json` 의 `version` 값이 수정되거나 `.github/workflows/**` 디렉토리 내 파일이 수정되어 `main`/`master` 브랜치에 푸시되는 경우에만 배포가 트리거됩니다.
+- **Build Output**: `client/dist` 디렉토리에 빌드 결과물 및 public 폴더 내 PWA 파일들이 복사되며, `JamesIves/github-pages-deploy-action`을 이용해 `gh-pages` 브랜치로 자동 배포됩니다.
+
+## 9. 관련 문서
 
 - [SPEC.md](./SPEC.md) — 타입 정의와 데이터 구조
 - [GAME_DESIGN.md](./GAME_DESIGN.md) — 게임 디자인 개요

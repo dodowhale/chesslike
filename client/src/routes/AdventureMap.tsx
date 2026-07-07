@@ -91,7 +91,7 @@ export default function AdventureMap() {
       <div
         class="absolute inset-0 z-0 pointer-events-none opacity-20"
         style={{
-          "background-image": `url('/assets/adventure/backgrounds/act${gameStore.adventure?.act ?? 1}.png')`,
+          "background-image": `url('./assets/adventure/backgrounds/act${gameStore.adventure?.act ?? 1}.png')`,
           "background-size": "cover",
           "background-position": "center",
           "image-rendering": "pixelated"
@@ -220,7 +220,7 @@ function MapGraph(props: MapGraphProps) {
                     )}
                   >
                     <img
-                      src={`/assets/adventure/nodes/${node.type}.png`}
+                      src={`./assets/adventure/nodes/${node.type}.png`}
                       class="w-10 h-10 object-contain"
                       style={{ "image-rendering": "pixelated" }}
                       alt={NODE_LABELS[node.type]}

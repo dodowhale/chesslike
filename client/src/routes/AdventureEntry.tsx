@@ -99,7 +99,7 @@ export default function AdventureEntry() {
               >
                 <div class="flex-shrink-0 w-16 h-16 border border-slate-700 bg-slate-950 rounded overflow-hidden flex items-center justify-center">
                   <img
-                    src={character.isUnlocked ? `/assets/adventure/characters/${character.id}.png` : `/assets/adventure/characters/locked.png`}
+                    src={character.isUnlocked ? `./assets/adventure/characters/${character.id}.png` : `./assets/adventure/characters/locked.png`}
                     class="w-full h-full object-contain"
                     style={{ "image-rendering": "pixelated" }}
                     alt={character.name}

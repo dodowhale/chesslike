@@ -2,8 +2,16 @@ import { defineConfig } from 'vite';
 import solid from 'vite-plugin-solid';
 import tailwindcss from '@tailwindcss/vite';
 import { fileURLToPath } from 'node:url';
+import { readFileSync } from 'node:fs';
+
+const pkgPath = fileURLToPath(new URL('./package.json', import.meta.url));
+const pkg = JSON.parse(readFileSync(pkgPath, 'utf-8'));
 
 export default defineConfig({
+  base: './',
+  define: {
+    'import.meta.env.VITE_BUILD_VERSION': JSON.stringify(pkg.version),
+  },
   plugins: [solid(), tailwindcss()],
   resolve: {
     alias: {

@@ -14,7 +14,7 @@ export class BootScene extends Phaser.Scene {
   preload(): void {
     for (const charId of CHARACTER_IDS) {
       for (const pieceKey of PIECE_KEYS) {
-        this.load.image(`${charId}-${pieceKey}`, `/assets/pieces/${charId}/${pieceKey}.png`);
+        this.load.image(`${charId}-${pieceKey}`, `./assets/pieces/${charId}/${pieceKey}.png`);
       }
     }
   }

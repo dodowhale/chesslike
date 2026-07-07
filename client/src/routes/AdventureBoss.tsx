@@ -285,7 +285,7 @@ export default function AdventureBoss() {
       <div
         class="absolute inset-0 z-0 pointer-events-none opacity-15"
         style={{
-          "background-image": `url('/assets/adventure/backgrounds/act${gameStore.adventure?.act ?? 1}.png')`,
+          "background-image": `url('./assets/adventure/backgrounds/act${gameStore.adventure?.act ?? 1}.png')`,
           "background-size": "cover",
           "background-position": "center",
           "image-rendering": "pixelated"
@@ -305,7 +305,7 @@ export default function AdventureBoss() {
           <div class="flex items-center gap-3 bg-slate-900 border border-red-950 px-4 py-2 rounded-lg max-w-[480px] w-full shadow-lg shadow-red-950/10">
             <div class="w-14 h-14 border border-red-500/40 bg-slate-950 rounded flex items-center justify-center overflow-hidden flex-shrink-0">
               <img
-                src={`/assets/adventure/bosses/act${gameStore.adventure?.act ?? 1}.png`}
+                src={`./assets/adventure/bosses/act${gameStore.adventure?.act ?? 1}.png`}
                 class="w-full h-full object-contain"
                 style={{ "image-rendering": "pixelated" }}
                 alt={`Act ${gameStore.adventure?.act ?? 1} Boss`}

@@ -75,7 +75,7 @@ export default function AdventureShop() {
                   <div class="flex flex-row gap-3 items-center">
                     <div class="w-10 h-10 border border-slate-700 bg-slate-950 rounded flex items-center justify-center overflow-hidden flex-shrink-0">
                       <img
-                        src={`/assets/adventure/items/${item.id}.png`}
+                        src={`./assets/adventure/items/${item.id}.png`}
                         class="w-8 h-8 object-contain"
                         style={{ "image-rendering": "pixelated" }}
                         alt={item.name}

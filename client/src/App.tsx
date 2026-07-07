@@ -1,5 +1,5 @@
 import { lazy } from 'solid-js';
-import { Navigate, Route, Router } from '@solidjs/router';
+import { Navigate, Route, HashRouter } from '@solidjs/router';
 
 const MainMenu = lazy(() => import('@/routes/MainMenu'));
 const ClassicEntry = lazy(() => import('@/routes/ClassicEntry'));
@@ -23,7 +23,7 @@ const Help = lazy(() => import('@/routes/Help'));
 
 export default function App() {
   return (
-    <Router>
+    <HashRouter>
       <Route path="/" component={MainMenu} />
       <Route path="/classic" component={ClassicEntry} />
       <Route path="/classic/single" component={ClassicSingleOptions} />
@@ -44,6 +44,6 @@ export default function App() {
       <Route path="/stats" component={Stats} />
       <Route path="/help" component={Help} />
       <Route path="*" component={() => <Navigate href="/" />} />
-    </Router>
+    </HashRouter>
   );
 }

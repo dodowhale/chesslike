@@ -39,7 +39,7 @@ export interface UciOptions {
   hash?: number;
 }
 
-const STOCKFISH_URL = '/stockfish/stockfish-18-lite-single.js';
+const STOCKFISH_URL = `${import.meta.env.BASE_URL}stockfish/stockfish-18-lite-single.js`;
 
 interface CurrentGo {
   token: number;
