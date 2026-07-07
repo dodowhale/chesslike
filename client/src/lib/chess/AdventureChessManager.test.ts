@@ -206,4 +206,85 @@ describe('AdventureChessManager', () => {
     expect(manager.getPieceAt('d8')).toBeDefined();
     expect(manager.getPieces().length).toBe(2);
   });
+
+  it('should clamp ally King HP to 0 and not remove it from board when dying of poison', () => {
+    const pieces: PieceState[] = [
+      {
+        id: 'p-king',
+        type: 'k',
+        side: 'w',
+        hp: 2, // 2 HP
+        maxHp: 50,
+        attack: 8,
+        items: [],
+        square: 'e1',
+        poisonTurns: 1,
+        poisonDamage: 3,
+      },
+      {
+        id: 'e-king',
+        type: 'k',
+        side: 'b',
+        hp: 100,
+        maxHp: 100,
+        attack: 10,
+        items: [],
+        square: 'e8',
+      }
+    ];
+
+    const manager = createAdventureChessManager({
+      pieces,
+      initialFen: '4k3/8/8/8/8/8/8/4K3 w - - 0 1',
+    });
+
+    // 백 턴 시작 시 맹독 적용을 위해 백 킹을 e1에서 d1로 이동 시도
+    const result = manager.tryMove('e1d1');
+    expect(result.ok).toBe(true);
+
+    const targetKing = manager.getPieceAt('d1')!;
+    expect(targetKing.hp).toBe(0); // 0으로 클램프
+    expect(targetKing.poisonTurns).toBe(0);
+    expect(manager.getPieceAt('d1')).toBeDefined();
+    expect(manager.getPieces().length).toBe(2);
+  });
+
+  it('should clamp ally King HP to 0 and not remove it from board when hit by enemy King active skill', () => {
+    const pieces: PieceState[] = [
+      {
+        id: 'p-king',
+        type: 'k',
+        side: 'w',
+        hp: 5, // 5 HP
+        maxHp: 50,
+        attack: 8,
+        items: [],
+        square: 'e1',
+      },
+      {
+        id: 'e-king',
+        type: 'k',
+        side: 'b',
+        hp: 100,
+        maxHp: 100,
+        attack: 10,
+        items: [],
+        square: 'e2', // 인접 셀
+      }
+    ];
+
+    const manager = createAdventureChessManager({
+      pieces,
+      initialFen: '4k3/8/8/8/8/8/8/4K3 b - - 0 1',
+    });
+
+    // 흑 킹(e2)이 액티브 스킬 시전
+    const result = manager.useActiveSkill('e-king');
+    expect(result.ok).toBe(true);
+
+    const allyKing = manager.getPieceAt('e1')!;
+    expect(allyKing.hp).toBe(0); // 10 데미지 받았으므로 0으로 클램프
+    expect(manager.getPieceAt('e1')).toBeDefined();
+    expect(manager.getPieces().length).toBe(2);
+  });
 });

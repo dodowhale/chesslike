@@ -289,7 +289,7 @@ export function createAdventureChessManager(opts: AdventureChessManagerOptions) 
         piece.poisonTurns -= 1;
         
         if (piece.hp <= 0) {
-          if (piece.type === 'k' && piece.side === 'b') {
+          if (piece.type === 'k') {
             piece.hp = 0;
           } else {
             chess.removePiece(piece.square);
@@ -629,7 +629,7 @@ export function createAdventureChessManager(opts: AdventureChessManagerOptions) 
 
                 calculateMitigatedDamage(enemy, targetDmg);
                 if (enemy.hp <= 0) {
-                  if (enemy.type === 'k' && enemy.side === 'b') {
+                  if (enemy.type === 'k') {
                     enemy.hp = 0;
                   } else {
                     chess.removePiece(sq);
@@ -735,7 +735,7 @@ export function createAdventureChessManager(opts: AdventureChessManagerOptions) 
 
         calculateMitigatedDamage(enemy, dmg);
         if (enemy.hp <= 0) {
-          if (enemy.type === 'k' && enemy.side === 'b') {
+          if (enemy.type === 'k') {
             enemy.hp = 0;
           } else {
             chess.removePiece(pullSquare);
@@ -774,7 +774,7 @@ export function createAdventureChessManager(opts: AdventureChessManagerOptions) 
                 
                 calculateMitigatedDamage(enemy, dmg);
                 if (enemy.hp <= 0) {
-                  if (enemy.type === 'k' && enemy.side === 'b') {
+                  if (enemy.type === 'k') {
                     enemy.hp = 0;
                   } else {
                     chess.removePiece(sq);

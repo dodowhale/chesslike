@@ -2,7 +2,17 @@
 
 본 프로젝트의 변경 사항을 [Keep a Changelog 1.1.0](https://keepachangelog.com/ko/1.1.0/) 형식으로 기록한다. 버전 체계는 [SemVer 2.0.0](https://semver.org/lang/ko/) — 코드 마일스톤(M0~M5)을 0.x 시리즈로 매핑한다.
 
-## [Unreleased] — M6+ 콘텐츠·UX 패키지
+## [Unreleased]
+
+### Added
+
+### Changed
+- 클라이언트 빌드 최적화: `client/vite.config.ts`에 Rollup `manualChunks` 설정을 적용하여 무거운 서드파티 라이브러리인 Phaser 3를 독립된 `vendor-phaser` 청크로 분리, 초기 페이지 로드 속도 향상 및 코드 스플릿 최적화 달성.
+
+### Fixed
+- 모험 모드 킹 제거 보호 로직 일반화: 턴 시작 시 맹독(Poison) 피해 정산 및 나이트·퀸·킹의 액티브 스킬 피해 정산 과정에서 적 킹(보스)뿐만 아니라 플레이어의 킹(아군 킹)도 체력이 0 이하가 되었을 때 보드에서 즉시 제거되는 대신 HP 0 상태(clamp)로 보드에 남아 있는 상태에서 패배 전이가 안정적으로 진행되도록 보완.
+
+## [0.6.0] — 2026-07-07 — M6+ 콘텐츠·UX 패키지
 
 ### Added
 - 글로벌 리더보드 시스템 추가: Bun built-in SQLite를 이용한 `server` DB 및 `/api/leaderboard` (GET/POST), `/api/achievements/verify` (POST) API 구현.

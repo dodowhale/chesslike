@@ -15,4 +15,18 @@ export default defineConfig({
     port: 5180,
     strictPort: false,
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules/phaser')) {
+            return 'vendor-phaser';
+          }
+          if (id.includes('node_modules/stockfish')) {
+            return 'vendor-stockfish';
+          }
+        },
+      },
+    },
+  },
 });
