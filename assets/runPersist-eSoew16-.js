@@ -1,0 +1,1 @@
+import{n as s,m as t,o as e}from"./index-BLA7LOf4.js";const n="adventure:run";async function c(){return s(n)}async function i(a){await e(n,a)}async function o(){await t(n)}export{o as c,c as l,i as p};
