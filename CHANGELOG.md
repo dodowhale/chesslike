@@ -1,10 +1,23 @@
 # Changelog
 
-본 프로젝트의 변경 사항을 [Keep a Changelog 1.1.0](https://keepachangelog.com/ko/1.1.0/) 형식으로 기록한다. 버전 체계는 [SemVer 2.0.0](https://semver.org/lang/ko/) — 코드 마일스톤(M0~M5)을 0.x 시리즈로 매핑한다.
+본 프로젝트의 변경 사항을 [Keep a Changelog 1.1.0](https://keepachangelog.com/ko/1.1.0/) 형식으로 기록한다. 버전 체계는 [SemVer 2.0.0](https://semver.org/lang/ko/)을 따르며, 공식 릴리즈 버전(`v0.1.0` 등)과 개발 이정표인 마일스톤(`M0`~`M6+`) 정보를 구분하여 명확히 기재한다.
 
 ## [Unreleased]
 
 ### Added
+
+### Changed
+
+### Fixed
+
+## [0.1.0] — 2026-07-08 — 공식 첫 릴리즈 (M0 ~ M6+ 통합)
+
+본 버전은 M0부터 M6+까지의 모든 마일스톤 구현사항(클래식 및 모험 모드, 리더보드, 외부 자산, 최적화 등)을 통합하고, 추가적인 버그 수정 및 PWA 환경 대응을 완료하여 배포한 첫 공식 빌드입니다.
+
+### Added
+- PWA(Progressive Web App) 오프라인 모드 및 설치 지원 (`client/public/manifest.json`, `client/public/sw.js` 등록 및 캐싱 제어).
+- GitHub Pages 배포를 위한 Vite 빌드 파이프라인 연동 (`.github/workflows/deploy.yml` 작성).
+- `import.meta.env.VITE_BUILD_VERSION` 동적 주입 및 메인 UI 하단 버전 표시.
 
 ### Changed
 - 클라이언트 빌드 최적화: `client/vite.config.ts`에 Rollup `manualChunks` 설정을 적용하여 무거운 서드파티 라이브러리인 Phaser 3를 독립된 `vendor-phaser` 청크로 분리, 초기 페이지 로드 속도 향상 및 코드 스플릿 최적화 달성.
@@ -12,7 +25,9 @@
 ### Fixed
 - 모험 모드 킹 제거 보호 로직 일반화: 턴 시작 시 맹독(Poison) 피해 정산 및 나이트·퀸·킹의 액티브 스킬 피해 정산 과정에서 적 킹(보스)뿐만 아니라 플레이어의 킹(아군 킹)도 체력이 0 이하가 되었을 때 보드에서 즉시 제거되는 대신 HP 0 상태(clamp)로 보드에 남아 있는 상태에서 패배 전이가 안정적으로 진행되도록 보완.
 
-## [0.6.0] — 2026-07-07 — M6+ 콘텐츠·UX 패키지
+---
+
+## [Milestone M6+] — 2026-07-07 — 콘텐츠·UX 패키지
 
 ### Added
 - 글로벌 리더보드 시스템 추가: Bun built-in SQLite를 이용한 `server` DB 및 `/api/leaderboard` (GET/POST), `/api/achievements/verify` (POST) API 구현.
@@ -60,7 +75,7 @@
 - 본 사이클은 외부 자산 1차 도입(기물 + 노드/보스/캐릭터/아이템/배경 PNG)까지 포함. **BGM/SFX 음원**, 서버 인프라(SQLite/leaderboard/인증), 새 캐릭터(요새단/혼돈단), 테스트 자동화, 드래그·드롭 입력, 자산의 UI 통합(노드 아이콘·보스·캐릭터 초상화·아이템 카드·배경)은 별도 사이클에서 후속.
 - **generator 가드**: `scripts/generate-piece-placeholders.ts`는 정식 자산과 같은 경로에 출력하므로 정식 자산 도입 후에는 `bun run gen:placeholders` 실행 금지. 1차 placeholder는 `client/public/assets/pieces_old/`에 보존(gitignore 적용 — 추적 X, 로컬 복구용).
 
-## [0.5.0] — 2026-05-24 — M5 Polish
+## [Milestone M5] — 2026-05-24 — Polish
 
 ### Added
 - 모험 모드 정식 보드: `AdventureChessManager` 연결로 Battle/Boss가 실제 보드 인터랙션 사용
@@ -83,7 +98,7 @@
 - HP 바 width tween + 색 전이 + 감소 시 빨간 flash
 - PromotionDialog·GameOverDialog 체스 글리프 → PNG 통일
 
-## [0.4.0] — 2026-05-23 — M4 메타 진행 + 콘텐츠
+## [Milestone M4] — 2026-05-23 — 메타 진행 + 콘텐츠
 
 ### Added
 - 별의 조각 시스템 (SPEC §8.1, IndexedDB 영구 저장)
@@ -99,7 +114,7 @@
 ### Notes
 - 요새단·혼돈단은 선택 사항으로 M6+ 콘텐츠 확장으로 이관
 
-## [0.3.0] — 2026-05-22 — M3 모험 모드 MVP
+## [Milestone M3] — 2026-05-22 — 모험 모드 MVP
 
 ### Added
 - 모험 모드 진입 흐름 (캐릭터 선택 → 맵)
@@ -112,7 +127,7 @@
 - 인벤토리 UI (장착/해제 + 글로벌 모디파이어 칩)
 - 1막 콘텐츠 (기본 캐릭터 Standard, 1막 보스, Battle/Elite/Shop/Event/Rest 각 1종 이상)
 
-## [0.2.0] — M2 클래식 로컬멀티
+## [Milestone M2] — 클래식 로컬멀티
 
 ### Added
 - 보드 자동 회전 (옵션 ON/OFF, 200ms 트랜지션, 모션 감소 옵션 반영)
@@ -122,7 +137,7 @@
 - 우발적 입력 방지 (두 단계 탭)
 - 다시 두기 시 색 자동 교대 (PGN 헤더 반영)
 
-## [0.1.0] — M1 클래식 공통 + 싱글
+## [Milestone M1] — 클래식 공통 + 싱글
 
 ### Added
 - 시간 제어 (Bullet/Blitz/Rapid/Classical/무제한/커스텀)
@@ -135,7 +150,7 @@
 - 분석 모드 (평가바, MultiPV 3, 수 되감기)
 - 게임 히스토리 자동 저장 (IndexedDB)
 
-## [0.0.1] — M0 공통 기반
+## [Milestone M0] — 공통 기반
 
 ### Added
 - Bun 프로젝트 초기화, 워크스페이스(client/server/shared)
