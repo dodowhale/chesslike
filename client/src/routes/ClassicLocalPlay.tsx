@@ -97,7 +97,7 @@ export default function ClassicLocalPlay() {
         onDecline={() => controller()?.declineRequest()}
       />
       <GameOverDialog
-        onClose={() => setResultClosed(true)}
+        onClose={() => navigate('/')}
         onRematch={rematch}
       />
       {resultClosed() && gameStore.ui.status.kind !== 'ongoing' && (

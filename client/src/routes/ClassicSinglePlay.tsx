@@ -104,7 +104,7 @@ export default function ClassicSinglePlay() {
       </main>
       <PromotionDialog />
       <GameOverDialog
-        onClose={() => setResultClosed(true)}
+        onClose={() => navigate('/')}
         onRematch={rematch}
         onAnalyze={() => {
           setResultClosed(true);
