@@ -107,7 +107,7 @@ export const ASSASSINS_CHARACTER: Character = {
     {
       id: 'assassins-jump',
       name: '암살 도약',
-      description: '나이트가 다른 기물 위를 점프 시 +1 데미지',
+      description: '아군 나이트가 적 기물 캡처 성공 시 기본 공격력 +1 영구 누적',
       trigger: 'on-capture',
       effect: { attack: 1 },
     },

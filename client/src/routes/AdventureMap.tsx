@@ -28,6 +28,17 @@ export default function AdventureMap() {
 
   onMount(() => {
     if (!activeRun()) navigate('/adventure', { replace: true });
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'i' || e.key === 'I') {
+        e.preventDefault();
+        navigate('/adventure/run/inventory');
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    onCleanup(() => {
+      window.removeEventListener('keydown', handleKeyDown);
+    });
   });
 
   /** 행 구조: 1(첫 노드) → 3·3·3·3·3·3(중간 6행) → 1(보스). */

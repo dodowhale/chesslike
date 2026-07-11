@@ -41,6 +41,7 @@ export type GameStatus =
 
 export interface ChessManager {
   getFen(): string;
+  getPieceAt(square: Square): { type: PieceSymbol; color: Color } | undefined;
   turn(): Color;
   legalMoves(square?: Square): string[];
   legalDestinations(square: Square): Square[];
@@ -336,6 +337,7 @@ export function createChessManager(initialFen: string = INITIAL_FEN): ChessManag
 
   return {
     getFen: () => chess.fen(),
+    getPieceAt: (square: Square) => chess.get(square),
     turn: () => chess.turn(),
     legalMoves,
     legalDestinations,

@@ -154,7 +154,7 @@ export const en: I18nDict = {
     standard: 'Standard',
     standardDesc: 'Standard FIDE 8x8 setup. Balanced start — ideal for learning adventure mode.',
     assassins: 'Assassins',
-    assassinsDesc: 'Knight-focused squad. Both knights receive HP and ATK boosts.',
+    assassinsDesc: 'Knight-focused squad. 4 White Knights deployed, and Knights permanently gain +1 ATK on capture.',
     saints: 'Saints',
     saintsDesc: 'Bishop and King-focused squad with health regen passive. 4 Bishops provide reliable support.',
     fortress: 'Fortress',

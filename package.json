@@ -1,6 +1,6 @@
 {
   "name": "chesslike",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "private": true,
   "description": "Pixel Chess Roguelike — 정통 체스와 로그라이크 모험이 결합된 픽셀 아트 게임",
   "workspaces": [

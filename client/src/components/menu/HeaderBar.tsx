@@ -11,7 +11,12 @@ export function HeaderBar(props: HeaderBarProps) {
   return (
     <header class="flex items-center justify-between px-4 py-3 border-b border-slate-800 bg-slate-950/80 backdrop-blur">
       <div class="flex items-center gap-2">
-        <span class="text-2xl">♞</span>
+        <img
+          src="./assets/pieces/standard/wN.png"
+          class="w-6 h-6 object-contain"
+          style={{ "image-rendering": "pixelated" }}
+          alt="Knight Logo"
+        />
         <span class="font-semibold text-slate-100">{dict().app.title}</span>
       </div>
       <div class="flex items-center gap-2">

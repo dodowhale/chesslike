@@ -32,7 +32,14 @@ export default function MainMenu() {
           <ModeCard
             title={dict().menu.classic}
             description={dict().menu.classicDesc}
-            icon="♛"
+            icon={
+              <img
+                src="./assets/pieces/standard/wQ.png"
+                class="w-12 h-12 object-contain"
+                style={{ "image-rendering": "pixelated" }}
+                alt="Classic Mode"
+              />
+            }
             accent="classic"
             onClick={() => {
               setMode('classic');
@@ -42,7 +49,14 @@ export default function MainMenu() {
           <ModeCard
             title={dict().menu.adventure}
             description={dict().menu.adventureDesc}
-            icon="⚔"
+            icon={
+              <img
+                src="./assets/adventure/nodes/boss.png"
+                class="w-12 h-12 object-contain"
+                style={{ "image-rendering": "pixelated" }}
+                alt="Adventure Mode"
+              />
+            }
             accent="adventure"
             onClick={() => {
               setMode('adventure');

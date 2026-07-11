@@ -31,6 +31,7 @@ export default function AdventureBoss() {
   const [abandonOpen, setAbandonOpen] = createSignal(false);
   const PHASE_COUNT = 2;
   const [skillTargetMode, setSkillTargetMode] = createSignal(false);
+  const [showPhaseTransition, setShowPhaseTransition] = createSignal(false);
 
   const run = () => gameStore.adventure;
   const currentNode = createMemo(() =>
@@ -215,7 +216,7 @@ export default function AdventureBoss() {
     if (status.kind === 'checkmate' && status.winner === 'w') {
       // 페이즈 클리어
       if (phaseIdx() < PHASE_COUNT - 1) {
-        nextPhase();
+        setShowPhaseTransition(true);
       } else {
         finalize('victory');
       }
@@ -228,6 +229,7 @@ export default function AdventureBoss() {
     const c = activeRun();
     if (!c) return;
     setPhaseIdx(phaseIdx() + 1);
+    setShowPhaseTransition(false);
     // SPEC §5.4: 플레이어 기물 HP/아이템 보존하며 새 보드 시작.
     // controller가 status:ongoing + interactive 재설정까지 책임.
     c.startNextBossPhase();
@@ -393,6 +395,33 @@ export default function AdventureBoss() {
           <Button onClick={confirmAbandon}>보스전 포기</Button>
         </div>
       </Modal>
+      <Show when={showPhaseTransition()}>
+        <div class="fixed inset-0 z-50 flex flex-col items-center justify-center bg-slate-950/85 backdrop-blur-md p-6">
+          <div class="max-w-md w-full bg-slate-900/95 border-2 border-amber-500/30 rounded-xl p-8 shadow-2xl shadow-amber-500/10 text-center flex flex-col items-center gap-6">
+            <div class="w-16 h-16 bg-amber-500/15 rounded-full flex items-center justify-center border border-amber-500/30 text-amber-400 text-3xl animate-pulse">
+              👑
+            </div>
+            <div>
+              <h2 class="text-xl font-bold text-amber-400 mb-2">
+                페이즈 {phaseIdx() + 1} 클리어!
+              </h2>
+              <p class="text-xs text-slate-300">
+                보스 수호자가 쓰러졌으나, 한 층 더 강력해진 새로운 진형으로 부활하려고 합니다.
+              </p>
+            </div>
+            <div class="text-[11px] text-slate-400 border-t border-slate-800 pt-4 w-full">
+              아군의 체력과 장착 아이템은 보존되며, 보드는 리셋됩니다.
+            </div>
+            <Button
+              variant="primary"
+              onClick={nextPhase}
+              class="w-full py-2.5 text-sm font-semibold shadow-lg shadow-amber-600/20 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 border border-amber-400/20 transition-all duration-200"
+            >
+              다음 페이즈 시작하기 →
+            </Button>
+          </div>
+        </div>
+      </Show>
     </div>
   );
 }

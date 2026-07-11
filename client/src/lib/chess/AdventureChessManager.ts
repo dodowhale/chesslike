@@ -224,6 +224,15 @@ export function createAdventureChessManager(opts: AdventureChessManagerOptions) 
     return null;
   }
 
+  // chess.js 인스턴스 보드의 기물 타입을 opts.pieces에 기록된 실제 타입(승급 등)으로 보정
+  for (const piece of opts.pieces) {
+    const existing = chess.getPieceAt(piece.square);
+    if (!existing || existing.type !== piece.type || existing.color !== piece.side) {
+      chess.removePiece(piece.square);
+      chess.putPiece({ type: piece.type, color: piece.side }, piece.square);
+    }
+  }
+
   for (const piece of opts.pieces) {
     if (!piece.skill) {
       piece.skill = initPieceSkill(piece.type);

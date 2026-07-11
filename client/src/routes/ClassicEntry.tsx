@@ -24,14 +24,36 @@ export default function ClassicEntry() {
           <ModeCard
             title={dict().classic.single}
             description={dict().classic.singleDesc}
-            icon="🤖"
+            icon={
+              <img
+                src="./assets/pieces/standard/bK.png"
+                class="w-12 h-12 object-contain"
+                style={{ "image-rendering": "pixelated" }}
+                alt="Single vs AI"
+              />
+            }
             accent="classic"
             onClick={() => navigate('/classic/single')}
           />
           <ModeCard
             title={dict().classic.local}
             description={dict().classic.localDesc}
-            icon="👥"
+            icon={
+              <div class="flex gap-2 items-center">
+                <img
+                  src="./assets/pieces/standard/wP.png"
+                  class="w-10 h-10 object-contain"
+                  style={{ "image-rendering": "pixelated" }}
+                  alt="White Player"
+                />
+                <img
+                  src="./assets/pieces/standard/bP.png"
+                  class="w-10 h-10 object-contain"
+                  style={{ "image-rendering": "pixelated" }}
+                  alt="Black Player"
+                />
+              </div>
+            }
             accent="classic"
             onClick={() => navigate('/classic/local')}
           />

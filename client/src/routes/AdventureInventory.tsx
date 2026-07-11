@@ -1,4 +1,4 @@
-import { For, Show, createSignal, onMount } from 'solid-js';
+import { For, Show, createSignal, onMount, onCleanup } from 'solid-js';
 import { useNavigate } from '@solidjs/router';
 import type { Modifier, Piece, PieceType } from '@shared/adventure';
 import { Button } from '@/components/ui/Button';
@@ -33,6 +33,17 @@ export default function AdventureInventory() {
 
   onMount(() => {
     if (!activeRun()) navigate('/adventure', { replace: true });
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' || e.key === 'i' || e.key === 'I') {
+        e.preventDefault();
+        navigate('/adventure/run/map');
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    onCleanup(() => {
+      window.removeEventListener('keydown', handleKeyDown);
+    });
   });
 
   function playerPieces(): Piece[] {

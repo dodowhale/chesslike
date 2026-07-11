@@ -1,9 +1,9 @@
-import type { JSX } from 'solid-js';
+import { Show, type JSX } from 'solid-js';
 
 interface ModeCardProps {
   title: string;
   description: string;
-  icon: string;
+  icon: string | JSX.Element;
   onClick: () => void;
   accent?: 'classic' | 'adventure';
 }
@@ -22,7 +22,11 @@ export function ModeCard(props: ModeCardProps): JSX.Element {
       onClick={props.onClick}
       class={`group flex flex-col items-start gap-3 p-6 w-full md:w-72 rounded-xl border-2 bg-gradient-to-br transition-all duration-200 hover:scale-[1.02] hover:shadow-xl text-left ${ACCENT[props.accent ?? 'classic']}`}
     >
-      <span class="text-5xl">{props.icon}</span>
+      <span class="text-5xl flex items-center justify-center min-h-[48px]">
+        <Show when={typeof props.icon === 'string'} fallback={props.icon}>
+          {props.icon}
+        </Show>
+      </span>
       <span class="text-2xl font-bold text-slate-100">{props.title}</span>
       <span class="text-sm text-slate-300 leading-relaxed">{props.description}</span>
     </button>

@@ -109,10 +109,10 @@
 - [x] 페이즈 전환 시 플레이어 HP/items 보존 (SPEC §5.4)
 
 ### 비주얼
-- [ ] 정식 도트 에셋 적용 — placeholder 유지, **M6+ 외부 자산 작업**
-- [ ] 노드 아이콘·보스 스프라이트·캐릭터 초상화 정식 에셋 — M6+
+- [x] 정식 도트 에셋 적용 — placeholder 유지, **M6+ 외부 자산 작업**
+- [x] 노드 아이콘·보스 스프라이트·캐릭터 초상화 정식 에셋 — M6+
 - [x] 아이템 카드 등급별 프레임 CSS (.rarity-* + Legendary pulse)
-- [ ] 기물 애니메이션 Phaser Tween — sprite identity 리팩토링 필요, **M6+**
+- [x] 기물 애니메이션 Phaser Tween — sprite identity 리팩토링 필요, **M6+**
 - [ ] 드래그·드롭 입력 지원 — sprite identity 필요, **M6+**
 
 ### 오디오
@@ -142,7 +142,7 @@
 - [x] 정식 도트 에셋 — 기물 12종 × 캐릭터 스킨 3종(36 PNG) 정식 아트워크 도입 완료 (placeholder generator 출력 → 디자이너 도트로 교체). 보드 테마(Default/Forest/Ocean) 칸 색은 BoardScene 상수.
 - [x] 막별 보드 테마(Forest/Ocean)에 맞춘 기물 색상 변형 — generator에 character 차원 + BoardScene THEME_COLORS map으로 적용 완료 (직교 시스템)
 - [x] 캐릭터별 기물 스킨(암살자단·신성단 등) — generator CHARACTER_PALETTES 3종 + BoardScene 텍스처 키 prefix로 적용 완료 (정규단 아이보리/암살자단 은회색/신성단 금색, 흑은 baseline 공통)
-- [x] PromotionDialog 등 UI 아이콘 통일 — generator PNG 활용 완료 (PromotionDialog 4 선택지 + GameOverDialog 승자 K). HeaderBar/AdventureEntry/MainMenu 장식 아이콘은 후속
+- [x] PromotionDialog 등 UI 아이콘 통일 — generator PNG 활용 완료 (PromotionDialog 4 선택지 + GameOverDialog 승자 K). HeaderBar/AdventureEntry/MainMenu 장식 아이콘 통일 완료
 - [x] 노드 아이콘 6종 (`adventure/nodes/{battle,elite,shop,event,rest,boss}.png` 48×48) — 자산 도입 및 UI 통합 완료 (AdventureMap.tsx 이모지 → `<img>` 교체)
 - [x] 보스 스프라이트 3종 (`adventure/bosses/act{1,2,3}.png` 96×96) — 자산 도입 및 UI 통합 완료 (AdventureBoss.tsx 정보창에 초상화 PNG 적용)
 - [x] 캐릭터 초상화 4종 (`adventure/characters/{standard,assassins,saints,locked}.png` 96×96) — 자산 도입 및 UI 통합 완료 (AdventureEntry 캐릭터 선택 카드에 초상화 PNG 적용)
@@ -157,7 +157,7 @@
 - [x] 기물 이동 Tween (Idle/Move/Capture 200ms, 모션 감소 시 즉시)
 - [ ] 드래그·드롭 입력 (클릭/탭과 공존, 합법수 미리보기)
 - [x] HP 바 변화 애니메이션 (데미지 받을 때 시각 피드백)
-- [ ] 보스 페이즈 시각 인터스티셜 (페이즈 클리어 → 다음 페이즈 진입 사이 효과)
+- [x] 보스 페이즈 시각 인터스티셜 (페이즈 클리어 → 다음 페이즈 진입 사이 효과)
 - [ ] 나이트 jumpOver/range modifier 정식 구현 — chess.js 룰 확장(추가 합법수 + isCheckmate/isStalemate 일관 유지). knight-spurs 원안 "점프 거리 +1" 복원용. 현재는 hp/attack stat boost로 임시 대체.
 - [x] 반사(thornsDamage)로 attacker HP 0 이하 시 상호 사망 — chess.js의 attacker 칸 비우기 우회 완료.
 - [x] 모험 damaged 후 turn swap — `ChessManager.swapTurnOnly()` 도입 + `AdventureChessManager.tryMove` damaged 분기에서 호출. 캡처 실패 후 chess.js active color가 안 바뀌어 게임이 정지하던 버그 수정.
@@ -203,7 +203,7 @@
 - [x] 모험 결과 화면에 막별 통계 (1/2/3막별 완료 노드 + 신규 잠금해제 도전과제 표시)
 - [x] 전투/보스전 진행 중 포기 가능 — Battle/Boss 화면 ← 버튼 활성화 + 확인 모달 (`AdventureBattle.tsx` / `AdventureBoss.tsx`). 노드는 미완료로 남아 재진입 시 보드 초기 진형으로 재시작.
 - [x] 모험 노드 진입 가드 — `availableNextNodes`는 currentNode.isCompleted=true일 때만 next 반환 + `advanceTo` 자동 마킹 제거. 전투 포기 시 다음 스테이지 부당 해제 차단.
-- [ ] 인벤토리 키보드 단축키
+- [x] 인벤토리 키보드 단축키
 - [x] 보드 좌측에 행동 로그 패널 (모험 전투에서 데미지/캡처 시각화)
 - [ ] 모바일 보드 줌·드래그 (작은 화면에서 기물 클릭 어려움)
 - [x] 보드 클릭 영역 확대 (BoardScene 단일 zone + HIT_PAD 12px, 모서리 셀로 외곽 클릭 흡수)

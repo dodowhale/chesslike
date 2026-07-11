@@ -350,7 +350,7 @@ export const ko: I18nDict = {
     standard: '정규단',
     standardDesc: 'FIDE 표준 8x8 진형. 균형 잡힌 시작 — 모험 모드 입문에 적합.',
     assassins: '암살자단',
-    assassinsDesc: '나이트 강화 파티. 두 나이트가 HP·ATK + 점프 확장 보너스를 받는다.',
+    assassinsDesc: '나이트 강화 파티. 백 나이트 4기 배치 및 나이트가 적 캡처 성공 시 공격력 +1 영구 누적.',
     saints: '신성단',
     saintsDesc: '비숍·킹 강화 + 결속 패시브. 4기의 비숍이 매 턴 결속 회복을 제공합니다.',
     fortress: '요새단',

@@ -719,4 +719,50 @@ describe('AdventureChessManager', () => {
     // 나이트 기본 공격력 10 -> 캡처로 인해 +1 가산 -> 11
     expect(knight.attack).toBe(11);
   });
+
+  it('should synchronize promoted pieces (e.g. Queen on a2) with the chess.js instance', () => {
+    const pieces: PieceState[] = [
+      {
+        id: 'p-king',
+        type: 'k',
+        side: 'w',
+        hp: 50,
+        maxHp: 50,
+        attack: 8,
+        items: [],
+        square: 'e1',
+      },
+      {
+        id: 'p-promoted-queen',
+        type: 'q',
+        side: 'w',
+        hp: 40,
+        maxHp: 40,
+        attack: 20,
+        items: [],
+        square: 'a2',
+      },
+      {
+        id: 'e-king',
+        type: 'k',
+        side: 'b',
+        hp: 100,
+        maxHp: 100,
+        attack: 10,
+        items: [],
+        square: 'e8',
+      }
+    ];
+
+    const manager = createAdventureChessManager({
+      pieces,
+      initialFen: '4k3/8/8/8/8/8/P7/4K3 w - - 0 1', // a2에 Pawn(P)이 존재하는 FEN
+    });
+
+    const dests = manager.legalDestinations('a2');
+    // 퀸은 대각선(b3, c4 등)과 횡방향(b2, c2 등)도 갈 수 있어야 함
+    expect(dests).toContain('b3');
+    expect(dests).toContain('b2');
+    expect(dests.length).toBeGreaterThan(2); // 폰의 행마 개수(a3, a4 최대 2개)보다 많아야 함
+  });
 });
