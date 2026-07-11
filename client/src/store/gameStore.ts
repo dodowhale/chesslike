@@ -44,12 +44,14 @@ interface UiState {
 interface RootState extends GameState {
   ui: UiState;
   moves: MoveDescriptor[];
+  actionLogs: string[];
 }
 
 const initial: RootState = {
   board: INITIAL_FEN,
   turn: 'w',
   moves: [],
+  actionLogs: [],
   ui: {
     highlights: [],
     orientation: 'w',
@@ -463,3 +465,11 @@ eventBus.on('board:squareClicked', ({ square }) => {
   }
   handleSquareClick(square as Square);
 });
+
+export function pushActionLog(message: string): void {
+  setState('actionLogs', (logs) => [...logs, message]);
+}
+
+export function clearActionLogs(): void {
+  setState('actionLogs', []);
+}

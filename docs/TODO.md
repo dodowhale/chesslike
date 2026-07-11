@@ -178,7 +178,9 @@
 - [x] 통계 화면 `/stats` (총 런/승률/보스 클리어/누적 골드/막별 보스 등) + HeaderBar 📊 활성화
 - [x] 이벤트 풀 6 → 15 (goblin-ambush, hermits-blessing, cursed-chest, pilgrims-shrine, wanderers-deal, ravens-warning, forgotten-library, merchants-favor, arena-trial)
 - [x] 아이템 풀 Rare 5 → 10, Legendary 2 → 5
-- [ ] 캐릭터별 시작 아이템/패시브 다양화
+- [x] 캐릭터별 패시브 정합 구현 및 오류 수정 (암살자단 캡처 성장 및 신성단 킹 타겟팅 힐 정상화 완료)
+- [x] 상점 새로고침(Reroll) 기능 도입 (15골드 소모)
+- [x] 캐릭터별 시작 아이템/패시브 다양화 (Assassins/Saints/Fortress/Chaos 전용 시작 아이템 배치 완료)
 
 ### 코드 — 서버 / 인프라
 - [x] server SQLite 스키마 정의 (Bun:Sqlite 사용)
@@ -202,7 +204,7 @@
 - [x] 전투/보스전 진행 중 포기 가능 — Battle/Boss 화면 ← 버튼 활성화 + 확인 모달 (`AdventureBattle.tsx` / `AdventureBoss.tsx`). 노드는 미완료로 남아 재진입 시 보드 초기 진형으로 재시작.
 - [x] 모험 노드 진입 가드 — `availableNextNodes`는 currentNode.isCompleted=true일 때만 next 반환 + `advanceTo` 자동 마킹 제거. 전투 포기 시 다음 스테이지 부당 해제 차단.
 - [ ] 인벤토리 키보드 단축키
-- [ ] 보드 좌측에 행동 로그 패널 (모험 전투에서 데미지/캡처 시각화)
+- [x] 보드 좌측에 행동 로그 패널 (모험 전투에서 데미지/캡처 시각화)
 - [ ] 모바일 보드 줌·드래그 (작은 화면에서 기물 클릭 어려움)
 - [x] 보드 클릭 영역 확대 (BoardScene 단일 zone + HIT_PAD 12px, 모서리 셀로 외곽 클릭 흡수)
 - [ ] 전투 포기 시 진행 중 보드 스냅샷 보존 (현재는 재진입 시 초기 진형으로 재시작 — 의도된 UX이나 "잠시 다른 노드 보고 돌아오기" 시나리오에선 손실)

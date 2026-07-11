@@ -1,6 +1,7 @@
 import { createEffect, createMemo, createSignal, onCleanup, onMount, Show } from 'solid-js';
 import { useNavigate } from '@solidjs/router';
 import { Button } from '@/components/ui/Button';
+import { CombatLogPanel } from '@/components/adventure/CombatLogPanel';
 import { Modal } from '@/components/ui/Modal';
 import { GameContainer } from '@/components/phaser/GameContainer';
 import { activeRun } from '@/store/adventureStore';
@@ -334,6 +335,7 @@ export default function AdventureBattle() {
             );
           })()}
         </Show>
+        <CombatLogPanel />
         <Show when={boardSelected() && highlights().length > 0}>
           <p class="text-xs text-slate-400">
             {boardSelected()} 선택 — {highlights().length}개 합법수

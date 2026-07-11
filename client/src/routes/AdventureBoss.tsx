@@ -1,6 +1,7 @@
 import { createEffect, createMemo, createSignal, onCleanup, onMount, Show } from 'solid-js';
 import { useNavigate } from '@solidjs/router';
 import { Button } from '@/components/ui/Button';
+import { CombatLogPanel } from '@/components/adventure/CombatLogPanel';
 import { Modal } from '@/components/ui/Modal';
 import { GameContainer } from '@/components/phaser/GameContainer';
 import { activeRun } from '@/store/adventureStore';
@@ -370,6 +371,7 @@ export default function AdventureBoss() {
             );
           })()}
         </Show>
+        <CombatLogPanel />
         <Show when={outcome() !== null}>
           <Button onClick={returnToMap}>
             {outcome() === 'victory' ? '맵으로' : '결과 화면'}

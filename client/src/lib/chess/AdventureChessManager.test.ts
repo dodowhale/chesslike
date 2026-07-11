@@ -35,8 +35,8 @@ const weakingTotem: Item = {
   name: '약화의 토템',
   rarity: 'uncommon',
   category: 'effect',
-  description: '공격/스킬 성공 시 대상 2턴 약화(공격력 반감)',
-  modifier: { weakenOnHit: 2 }
+  description: '공격/스킬 성공 시 대상 1턴 약화(공격력 반감)',
+  modifier: { weakenOnHit: 1 }
 };
 
 const vampireFang: Item = {
@@ -44,8 +44,8 @@ const vampireFang: Item = {
   name: '뱀파이어의 송곳니',
   rarity: 'rare',
   category: 'effect',
-  description: '기물이 적 캡처 시 공격력의 50%만큼 본인 HP 흡혈 회복',
-  modifier: { lifestealRatio: 0.5 }
+  description: '기물이 적 캡처 시 공격력의 30%만큼 본인 HP 흡혈 회복',
+  modifier: { lifestealRatio: 0.3 }
 };
 
 describe('AdventureChessManager', () => {
@@ -451,6 +451,7 @@ describe('AdventureChessManager', () => {
     const manager = createAdventureChessManager({
       pieces,
       initialFen: '8/8/8/8/8/4k3/4Q3/4K3 w - - 0 1',
+      rng: () => 0.0,
     });
 
     const result = manager.tryMove('e2e3');
@@ -459,7 +460,7 @@ describe('AdventureChessManager', () => {
 
     const boss = manager.getPieceAt('e3')!;
     expect(boss.bindTurns).toBe(1);
-    expect(boss.weakenTurns).toBe(2);
+    expect(boss.weakenTurns).toBe(1); // 2 -> 1로 밸런싱
   });
 
   it('should restore HP to attacker through Lifesteal modifier on capture', () => {
@@ -507,9 +508,9 @@ describe('AdventureChessManager', () => {
 
     const rook = manager.getPieceAt('e3')!;
     // 반격 피해: 2.  rook hp: 15 - 2 = 13.
-    // 흡혈량: 공격력 15 * 50% = 7.5 -> Math.round(7.5) = 8.
-    // 최종 HP: 13 + 8 = 21.
-    expect(rook.hp).toBe(21);
+    // 흡혈량: 공격력 15 * 30% = 4.5 -> Math.round(4.5) = 5. (50% -> 30%로 밸런싱)
+    // 최종 HP: 13 + 5 = 18.
+    expect(rook.hp).toBe(18);
   });
 
   it('should relocate Rook and trigger Fortress passive heal during castling', () => {
@@ -614,5 +615,108 @@ describe('AdventureChessManager', () => {
     const pawn = manager.getPieceAt('f3')!;
     // 폰 기본 공격력 5 -> 캡처로 인해 +2 가산 -> 7
     expect(pawn.attack).toBe(7);
+  });
+
+  it('should apply Saints turn-start heal only to King', () => {
+    const pieces: PieceState[] = [
+      {
+        id: 'p-king',
+        type: 'k',
+        side: 'w',
+        hp: 40,
+        maxHp: 50,
+        attack: 8,
+        items: [],
+        square: 'e1',
+      },
+      {
+        id: 'p-bishop',
+        type: 'b',
+        side: 'w',
+        hp: 20,
+        maxHp: 25,
+        attack: 10,
+        items: [],
+        square: 'c1',
+      },
+      {
+        id: 'e-king',
+        type: 'k',
+        side: 'b',
+        hp: 10,
+        maxHp: 10,
+        attack: 2,
+        items: [],
+        square: 'e8',
+      }
+    ];
+
+    const manager = createAdventureChessManager({
+      pieces,
+      initialFen: '4k3/8/8/8/8/8/8/2B1K3 w - - 0 1',
+      characterId: 'saints',
+      turnStartHeal: 1, // Saints 패시브 가상 설정
+    });
+
+    // 백 킹 e1 -> d1 이동으로 턴 시작 정산 발화
+    const result = manager.tryMove('e1d1');
+    expect(result.ok).toBe(true);
+
+    const king = manager.getPieceAt('d1')!;
+    const bishop = manager.getPieceAt('c1')!;
+
+    // 킹만 +1 힐 (40 -> 41)
+    expect(king.hp).toBe(41);
+    // 비숍은 힐을 받지 않음 (20 -> 20)
+    expect(bishop.hp).toBe(20);
+  });
+
+  it('should apply permanent ATK bonus to Knight through Assassins jump passive on capture', () => {
+    const pieces: PieceState[] = [
+      {
+        id: 'p-knight',
+        type: 'n',
+        side: 'w',
+        hp: 25,
+        maxHp: 25,
+        attack: 10,
+        items: [],
+        square: 'b1',
+      },
+      {
+        id: 'e-pawn',
+        type: 'p',
+        side: 'b',
+        hp: 5,
+        maxHp: 10,
+        attack: 2,
+        items: [],
+        square: 'c3',
+      },
+      {
+        id: 'e-king',
+        type: 'k',
+        side: 'b',
+        hp: 10,
+        maxHp: 10,
+        attack: 2,
+        items: [],
+        square: 'e8',
+      }
+    ];
+
+    const manager = createAdventureChessManager({
+      pieces,
+      initialFen: '4k3/8/8/8/8/2p5/8/1N2K3 w - - 0 1',
+      characterId: 'assassins',
+    });
+
+    // 나이트 b1이 c3의 폰을 캡처
+    const result = manager.tryMove('b1c3');
+    expect(result.ok).toBe(true);
+
+    const knight = manager.getPieceAt('c3')!;
+    // 나이트 기본 공격력 10 -> 캡처로 인해 +1 가산 -> 11
+    expect(knight.attack).toBe(11);
   });
 });

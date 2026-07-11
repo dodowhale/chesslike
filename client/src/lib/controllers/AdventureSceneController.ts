@@ -9,7 +9,17 @@ import type {
   Modifier,
   Piece as AdventurePiece,
 } from '@shared/adventure';
-import { snapshotAdventureRun, setMode } from '@/store/gameStore';
+import {
+  snapshotAdventureRun,
+  setMode,
+  resetStatusOngoing,
+  setAdventureBoardSnapshot,
+  setAdventurePieceHps,
+  setInteractive,
+  setStatus,
+  pushActionLog,
+  clearActionLogs,
+} from '@/store/gameStore';
 import { INITIAL_FEN } from '@shared/game';
 import { generateAct } from '@/lib/adventure/MapGenerator';
 import {
@@ -22,18 +32,41 @@ import {
 import { toRichLastMove, type MoveDescriptor, type Square } from '@/lib/chess/ChessManager';
 import type { LastMove } from '@/lib/phaser/bridge/eventBus';
 import { persistRun } from '@/lib/adventure/runPersist';
-import {
-  resetStatusOngoing,
-  setAdventureBoardSnapshot,
-  setAdventurePieceHps,
-  setInteractive,
-  setStatus,
-} from '@/store/gameStore';
 import { INITIAL_FEN as STARTING_FEN } from '@shared/game';
 import type { SceneController } from './types';
 import { getCharacterById } from '@/lib/adventure/data/characters';
 import { settings } from '@/store/settingsStore';
 import { getEngine } from '@/lib/chess/StockfishEngine';
+
+function getPieceName(type: string): string {
+  switch (type) {
+    case 'p': return '폰';
+    case 'n': return '나이트';
+    case 'b': return '비숍';
+    case 'r': return '룩';
+    case 'q': return '퀸';
+    case 'k': return '킹';
+    default: return type;
+  }
+}
+
+function parsePieceName(id: string): string {
+  const parts = id.split('-');
+  const side = parts[2] === 'w' ? '아군' : '적';
+  const type = getPieceName(parts[3] ?? '');
+  return `${side} ${type}`;
+}
+
+function getKingPenalty(type: string): number {
+  switch (type) {
+    case 'p': return 2;
+    case 'n': return 5;
+    case 'b': return 5;
+    case 'r': return 8;
+    case 'q': return 12;
+    default: return 0;
+  }
+}
 
 /**
  * ADVENTURE.md §8.1 별의 조각 보상.
@@ -326,6 +359,7 @@ export class AdventureRunController implements SceneController {
    *   기물 HP/아이템을 보존하려면 이전 boardChess의 백 진영 pieces 스냅샷을 넘긴다.
    */
   enterBoardNode(preservePlayerPieces?: PieceState[]): void {
+    clearActionLogs();
     const character = getCharacterById(this.run.characterId);
     if (!character) return;
     const preservedById = new Map<string, PieceState>();
@@ -384,7 +418,7 @@ export class AdventureRunController implements SceneController {
     setInteractive(true);
     this.syncBoard(undefined, { instant: true });
 
-    // Act 및 보스 여부에 따른 Stockfish AI 난이도 결정
+    // Act 및 보스 여부에 따른 Stockfish AI 난이도 결정 (밸런스 패치: Elo 미세 조정)
     const isBoss = this.currentNode()?.type === 'boss';
     const act = this.run.act;
     let uciElo = 800;
@@ -392,11 +426,11 @@ export class AdventureRunController implements SceneController {
 
     if (isBoss) {
       if (act === 1) {
-        uciElo = 1200;
-        skillLevel = 3;
+        uciElo = 1100;
+        skillLevel = 2;
       } else if (act === 2) {
-        uciElo = 1500;
-        skillLevel = 5;
+        uciElo = 1400;
+        skillLevel = 4;
       } else {
         uciElo = 1800;
         skillLevel = 8;
@@ -477,6 +511,7 @@ export class AdventureRunController implements SceneController {
     if (!this.boardChess) return undefined;
     const result = this.boardChess.tryMove(uci);
     if (!result.ok) return result;
+    this.writeMoveLog(result);
     this.syncBoard(result.lastMove);
     if (this.checkBoardEndCondition()) return result;
     // 사용자 차례 끝 — AI 응답을 살짝 지연시켜 sprite Tween이 화면에 보이게.
@@ -493,8 +528,21 @@ export class AdventureRunController implements SceneController {
    */
   attemptActiveSkill(pieceId: string, targetSquare?: Square): AdventureMoveResult | undefined {
     if (!this.boardChess) return undefined;
+    const piece = this.boardChess.getPieces().find((p) => p.id === pieceId);
     const result = this.boardChess.useActiveSkill(pieceId, targetSquare);
     if (!result.ok) return result;
+
+    if (piece) {
+      const side = piece.side === 'w' ? '아군' : '적';
+      const name = getPieceName(piece.type);
+      const skillName = piece.skill?.name ?? '액티브 스킬';
+      if (targetSquare) {
+        pushActionLog(`[${side} ${name}]이(가) ${targetSquare} 칸에 [${skillName}]을 시전했습니다!`);
+      } else {
+        pushActionLog(`[${side} ${name}]이(가) [${skillName}]을 시전했습니다!`);
+      }
+    }
+
     this.syncBoard(undefined);
     if (this.checkBoardEndCondition()) return result;
     // 사용자 차례 끝 — AI 응답 지연
@@ -524,6 +572,7 @@ export class AdventureRunController implements SceneController {
               if (!this.boardChess) return;
               const moveResult = this.boardChess.tryMove(result.bestmove);
               if (moveResult.ok) {
+                this.writeMoveLog(moveResult);
                 this.syncBoard(moveResult.lastMove);
                 this.checkBoardEndCondition();
               } else {
@@ -555,9 +604,96 @@ export class AdventureRunController implements SceneController {
       if (!this.boardChess) return;
       const result = this.boardChess.tryMove(pick);
       if (!result.ok) return;
+      this.writeMoveLog(result);
       this.syncBoard(result.lastMove);
       this.checkBoardEndCondition();
     }, delay);
+  }
+
+  private writeMoveLog(result: AdventureMoveResult): void {
+    if (!this.boardChess) return;
+    const outcome = result.outcome;
+    if (outcome.kind === 'noop') {
+      if (result.lastMove) {
+        const from = result.lastMove.from;
+        const to = result.lastMove.to;
+        const targetPiece = this.boardChess.getPieceAt(to);
+        const pieceType = targetPiece ? targetPiece.type : 'p';
+        const side = result.lastMove.color === 'w' ? '아군' : '적';
+        const name = getPieceName(pieceType);
+        
+        if (result.lastMove.isCastle) {
+          pushActionLog(`[${side} 킹] 캐슬링을 실행했습니다.`);
+        } else {
+          pushActionLog(`[${side} ${name}] ${from} ➡️ ${to}`);
+        }
+      }
+    } else if (outcome.kind === 'damaged') {
+      const attackerName = parsePieceName(outcome.attackerId);
+      const defenderName = parsePieceName(outcome.defenderId);
+      const from = result.lastMove?.from ?? '';
+      const to = result.lastMove?.to ?? '';
+      pushActionLog(`[${attackerName}]이(가) ${from} ➡️ ${to}로 이동하며 [${defenderName}]에게 ${outcome.damage} 데미지를 입혔습니다!`);
+      
+      const defender = this.boardChess.getPieces().find((p) => p.id === outcome.defenderId);
+      if (defender) {
+        if (defender.bindTurns && defender.bindTurns > 0) {
+          pushActionLog(`[${defenderName}]이(가) 1턴 속박되었습니다.`);
+        }
+        if (defender.weakenTurns && defender.weakenTurns > 0) {
+          pushActionLog(`[${defenderName}]이(가) 1턴 약화되었습니다.`);
+        }
+      }
+
+      const attacker = this.boardChess.getPieces().find((p) => p.id === outcome.attackerId);
+      if (attacker) {
+        pushActionLog(`[${attackerName}]이(가) 반격으로 데미지를 받았습니다.`);
+      } else {
+        pushActionLog(`[${attackerName}]이(가) 반격 피해로 소멸하였습니다.`);
+        if (outcome.attackerId.includes('-w-')) {
+          const penalty = getKingPenalty(outcome.attackerId.split('-')[3] ?? '');
+          pushActionLog(`기물 소실로 아군 킹이 ${penalty} 피해를 입었습니다!`);
+        }
+      }
+    } else if (outcome.kind === 'captured') {
+      const attackerName = parsePieceName(outcome.attackerId);
+      const defenderName = parsePieceName(outcome.capturedId);
+      const from = outcome.move.from;
+      const to = outcome.move.to;
+      pushActionLog(`[${attackerName}]이(가) ${from} ➡️ ${to}로 이동하여 [${defenderName}]을(를) 잡았습니다!`);
+      
+      if (outcome.attackerId.includes('-w-') && outcome.attackerId.split('-')[3] === 'n') {
+        pushActionLog(`암살 도약 발동! [${attackerName}]의 공격력이 +1 영구 증가했습니다.`);
+      }
+      if (outcome.attackerId.includes('-w-') && outcome.attackerId.split('-')[3] === 'p') {
+        pushActionLog(`혼돈의 진화 발동! [${attackerName}]의 공격력이 +2 영구 증가했습니다.`);
+      }
+
+      if (outcome.attackerDied) {
+        pushActionLog(`[${attackerName}]이(가) 반격 피해로 소멸하였습니다.`);
+        if (outcome.attackerId.includes('-w-')) {
+          const penalty = getKingPenalty(outcome.attackerId.split('-')[3] ?? '');
+          pushActionLog(`기물 소실로 아군 킹이 ${penalty} 피해를 입었습니다!`);
+        }
+      } else {
+        const attackerPiece = this.boardChess.getPieces().find((p) => p.id === outcome.attackerId);
+        if (attackerPiece) {
+          const itemLifesteal = attackerPiece.items.reduce((acc, item) => acc + (item.modifier.lifestealRatio ?? 0), 0);
+          if (itemLifesteal > 0) {
+            const rawHeal = Math.round(attackerPiece.attack * itemLifesteal);
+            const finalHeal = Math.min(15, rawHeal);
+            if (finalHeal > 0) {
+              pushActionLog(`[${attackerName}]이(가) 흡혈로 HP를 ${finalHeal} 회복하였습니다.`);
+            }
+          }
+        }
+      }
+    } else if (outcome.kind === 'promoted') {
+      const name = parsePieceName(outcome.pieceId);
+      const to = outcome.move.to;
+      const newType = getPieceName(outcome.move.promotion ?? 'q');
+      pushActionLog(`[${name}]이(가) ${to}에서 [${newType}](으)로 승급하였습니다!`);
+    }
   }
 
   private collectLegalUcis(_color: 'w' | 'b'): string[] {

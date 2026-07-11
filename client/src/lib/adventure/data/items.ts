@@ -17,7 +17,7 @@ export const ITEM_POOL: Item[] = [
   { id: 'training-band', name: '훈련의 띠', rarity: 'common', category: 'stat', description: 'HP +4, 공격력 +1', modifier: { hp: 4, attack: 1 } },
   { id: 'fang-amulet', name: '엄니 부적', rarity: 'common', category: 'effect', description: '피격 시 반사 +2', modifier: { thornsDamage: 2 } },
   { id: 'minor-potion', name: '약한 회복약', rarity: 'common', category: 'effect', description: '턴마다 HP +2', modifier: { healPerTurn: 2 } },
-  { id: 'binding-chain', name: '속박의 사슬', rarity: 'common', category: 'effect', description: '공격/스킬 성공 시 대상 1턴 속박(이동 불가)', modifier: { bindOnHit: 1 } },
+  { id: 'binding-chain', name: '속박의 사슬', rarity: 'common', category: 'effect', description: '공격/스킬 성공 시 50% 확률로 대상 1턴 속박(이동 불가)', modifier: { bindOnHit: 1 } },
 
   // ---------- Uncommon (5) ----------
   // NOTE: 원안은 "나이트 점프 거리 +1"(jumpOver/range modifier)이었으나 chess.js 룰
@@ -25,12 +25,12 @@ export const ITEM_POOL: Item[] = [
   //   modifier로 재설계. uncommon 등급 안에서 royal-crown(hp20/atk5)·
   //   phoenix-feather(heal5)·thorn-mantle(thorns5)·titan-belt(hp15/atk3) 사이의
   //   차별 포지션: stat + 반사 작은 양을 동시에 주는 균형형.
-  { id: 'knight-spurs', name: '기사의 박차', rarity: 'uncommon', category: 'effect', description: 'HP +15, 공격력 +5, 피격 시 반사 +3', modifier: { hp: 15, attack: 5, thornsDamage: 3 } },
+  { id: 'knight-spurs', name: '기사의 박차', rarity: 'uncommon', category: 'effect', description: 'HP +10, 공격력 +3, 피격 시 반사 +2', modifier: { hp: 10, attack: 3, thornsDamage: 2 } },
   { id: 'royal-crown', name: '왕관', rarity: 'uncommon', category: 'stat', description: 'HP +20, 공격력 +5', modifier: { hp: 20, attack: 5 } },
   { id: 'phoenix-feather', name: '불사조 깃털', rarity: 'uncommon', category: 'effect', description: '턴마다 HP +5', modifier: { healPerTurn: 5 } },
   { id: 'thorn-mantle', name: '가시 망토', rarity: 'uncommon', category: 'effect', description: '피격 시 반사 +5', modifier: { thornsDamage: 5 } },
   { id: 'titan-belt', name: '거인의 허리띠', rarity: 'uncommon', category: 'stat', description: 'HP +15, 공격력 +3', modifier: { hp: 15, attack: 3 } },
-  { id: 'weaking-totem', name: '약화의 토템', rarity: 'uncommon', category: 'effect', description: '공격/스킬 성공 시 대상 2턴 약화(공격력 반감)', modifier: { weakenOnHit: 2 } },
+  { id: 'weaking-totem', name: '약화의 토템', rarity: 'uncommon', category: 'effect', description: '공격/스킬 성공 시 50% 확률로 대상 1턴 약화(공격력 반감)', modifier: { weakenOnHit: 1 } },
 
   // ---------- Rare (10) — M4 해금 ----------
   { id: 'demon-edge', name: '마검의 날', rarity: 'rare', category: 'stat', description: '공격력 +8', modifier: { attack: 8 } },
@@ -43,7 +43,7 @@ export const ITEM_POOL: Item[] = [
   { id: 'oathkeeper-shield', name: '맹약의 방패', rarity: 'rare', category: 'effect', description: 'HP +24, 턴마다 HP +2', modifier: { hp: 24, healPerTurn: 2 } },
   { id: 'phantom-cloak', name: '환영의 망토', rarity: 'rare', category: 'effect', description: '턴마다 HP +5, 피격 시 반사 +3', modifier: { healPerTurn: 5, thornsDamage: 3 } },
   { id: 'dragon-scale', name: '용비늘 갑옷', rarity: 'rare', category: 'stat', description: 'HP +20, 공격력 +5', modifier: { hp: 20, attack: 5 } },
-  { id: 'vampire-fang', name: '뱀파이어의 송곳니', rarity: 'rare', category: 'effect', description: '기물이 적 캡처 시 공격력의 50%만큼 본인 HP 흡혈 회복', modifier: { lifestealRatio: 0.5 } },
+  { id: 'vampire-fang', name: '뱀파이어의 송곳니', rarity: 'rare', category: 'effect', description: '기물이 적 캡처 시 공격력의 30%만큼 본인 HP 흡혈 회복 (최대 15)', modifier: { lifestealRatio: 0.3 } },
 
   // ---------- Legendary (5) — M4 해금, 보스 보상 ----------
   { id: 'crown-of-eternity', name: '영원의 왕관', rarity: 'legendary', category: 'stat', description: 'HP +50, 공격력 +10', modifier: { hp: 50, attack: 10 } },

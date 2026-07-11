@@ -337,10 +337,12 @@ export type CharacterId = 'standard' | 'assassins' | 'saints';
 ### 5.10 상태이상 시스템 (속박 & 약화) 및 흡혈
 - **속박 (Bind)**: 기물의 `bindTurns`가 0보다 클 경우, 해당 기물은 합법적 행마가 원천 불가능하며 (`legalDestinations`가 `[]`를 반환), `tryMove` 시도 역시 `bound-piece` 오류로 차단됩니다. 지속턴은 기물의 행동 완료로 턴이 종료되는 시점(`applyTurnEndStatusReduction`)에 1씩 차감됩니다.
 - **약화 (Weaken)**: 기물의 `weakenTurns`가 0보다 클 경우, 기물의 최종 공격력(`effectiveAttack`) 계산 값의 50%가 영구 반감(소수점 버림)되어 적용됩니다. 지속턴은 속박과 마찬가지로 행동 완료 후 턴 교대 정산 시 1씩 차감됩니다.
-- **피격 시 상태이상 발화**: 아이템 또는 글로벌 모디파이어의 `bindOnHit` 또는 `weakenOnHit`이 세팅된 기물이 일반 공격(damaged/captured) 또는 액티브 스킬(나이트, 퀸, 킹)로 적을 타격했을 때, 타격 대상에게 지속턴이 적용 및 갱신(`Math.max(current, modifier)`)됩니다.
-- **흡혈 (Lifesteal)**: 기물의 아이템에 `lifestealRatio`가 있을 경우, 적 기물 캡처에 성공하고 본인이 반격으로 자멸하지 않았을 때, `effectiveAttack * lifestealRatio` 수치만큼 즉시 본인의 HP를 회복(최대 HP 한도)시킵니다.
+- **피격 시 상태이상 발화**: 아이템 또는 글로벌 모디파이어의 `bindOnHit` 또는 `weakenOnHit`이 세팅된 기물이 일반 공격(damaged/captured) 또는 액티브 스킬(나이트, 퀸, 킹)로 적을 타격했을 때, **50% 확률**로 타격 대상에게 지속턴이 적용 및 갱신(`Math.max(current, modifier)`)됩니다. (약화의 토템은 지속 1턴으로 밸런싱됨)
+- **흡혈 (Lifesteal)**: 기물의 아이템에 `lifestealRatio`가 있을 경우, 적 기물 캡처에 성공하고 본인이 반격으로 자멸하지 않았을 때, `effectiveAttack * lifestealRatio` 수치만큼 즉시 본인의 HP를 회복시킵니다. 단, 밸런스 패치에 따라 흡혈 비율은 **30%**로 적용되며, 1회 캡처당 회복할 수 있는 HP는 **최대 15 HP 한도**로 clamp 처리됩니다.
 
 ### 5.11 신규 캐릭터 패시브 작동 사양
+- **암살 도약 (Assassins Jump)**: `characterId === 'assassins'` 인 런일 때, 아군 나이트(`type === 'n'`)가 적 기물을 캡처하는 데 성공하면, 해당 나이트 기물의 기본 공격력(`attack`)을 +1 만큼 영구 누적 가산합니다.
+- **결속의 가호 (Saints Blessing)**: `characterId === 'saints'` 인 런일 때, 매 턴 시작 힐(`applyTurnStartHeal`) 정산 과정에서 `turnStartHeal` 보너스는 아군 전체에 적용되지 않고, **오직 아군 킹(`type === 'k'`) 기물에만** +1 HP씩 적용되도록 제한합니다.
 - **요새의 장벽 (Fortress Bulwark)**: `characterId === 'fortress'` 인 런일 때, 아군이 캐슬링(킹사이드/퀸사이드)을 성공적으로 수행하면 참여한 킹과 룩 기물의 HP를 각각 +15 만큼 즉시 회복시킵니다. 또한 캐슬링 시 룩의 `piecesBySquare` 좌표가 킹의 이동에 맞추어 정상 relocation 되도록 보장합니다.
 - **혼돈의 진화 (Chaos Evolution)**: `characterId === 'chaos'` 인 런일 때, 아군 폰(`type === 'p'`)이 적 기물을 캡처하는 데 성공하면, 해당 폰 기물의 기본 공격력(`attack`)을 +2 만큼 영구 누적 가산합니다.
 

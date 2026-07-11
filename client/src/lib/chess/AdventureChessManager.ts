@@ -75,6 +75,7 @@ export interface AdventureChessManagerOptions {
   /** 매 턴 시작 시 적용되는 캐릭터 패시브 (turn-start healPerTurn 등). */
   turnStartHeal?: number;
   characterId?: string;
+  rng?: () => number;
 }
 
 interface SynergyCheckResult {
@@ -196,6 +197,7 @@ export function createAdventureChessManager(opts: AdventureChessManagerOptions) 
   let globalMods: Modifier[] = opts.globalModifiers ?? [];
   const turnStartHeal = opts.turnStartHeal ?? 0;
   const characterId = opts.characterId;
+  const rng = opts.rng ?? Math.random;
 
   function getStatusOnHitModifiers(piece: AdventurePiece, globalMods: Modifier[]): { bind: number; weaken: number; lifesteal: number } {
     let bind = piece.items.reduce((acc, item) => acc + (item.modifier.bindOnHit ?? 0), 0);
@@ -363,7 +365,19 @@ export function createAdventureChessManager(opts: AdventureChessManagerOptions) 
     for (const piece of piecesById.values()) {
       if (piece.side !== side) continue;
       const itemHeal = effectivePieceHealPerTurn(piece, globalMods);
-      const totalHeal = turnStartHeal + itemHeal;
+      
+      let characterHeal = 0;
+      if (turnStartHeal > 0) {
+        if (characterId === 'saints') {
+          if (piece.type === 'k') {
+            characterHeal = turnStartHeal;
+          }
+        } else {
+          characterHeal = turnStartHeal;
+        }
+      }
+
+      const totalHeal = characterHeal + itemHeal;
       if (totalHeal <= 0) continue;
       const newHp = Math.min(piece.maxHp, piece.hp + totalHeal);
       piece.hp = newHp;
@@ -477,12 +491,12 @@ export function createAdventureChessManager(opts: AdventureChessManagerOptions) 
         defender.poisonDamage = 3;
       }
 
-      // 신규 속박/약화 아이템 효과 적용
+      // 신규 속박/약화 아이템 효과 적용 (밸런스 패치: 50% 확률 발동)
       const hits = getStatusOnHitModifiers(attacker, globalMods);
-      if (hits.bind > 0) {
+      if (hits.bind > 0 && rng() < 0.5) {
         defender.bindTurns = Math.max(defender.bindTurns ?? 0, hits.bind);
       }
-      if (hits.weaken > 0) {
+      if (hits.weaken > 0 && rng() < 0.5) {
         defender.weakenTurns = Math.max(defender.weakenTurns ?? 0, hits.weaken);
       }
 
@@ -548,6 +562,11 @@ export function createAdventureChessManager(opts: AdventureChessManagerOptions) 
       attacker.attack += 2;
     }
 
+    // 암살자단 패시브 발화: 아군 나이트가 적 캡처 성공 시 공격력 +1 영구 누적
+    if (characterId === 'assassins' && attacker.type === 'n' && attacker.side === 'w') {
+      attacker.attack += 1;
+    }
+
     // 태양의 가호 세트 시너지 감지: sturdy-cloak + sunforged-blade 장착 시 아군 킹 8 힐, 장착 기물 ATK +2 영구 누적
     const synIds = getSetSynergyIds(attacker);
     if (synIds.hasSunShield) {
@@ -590,12 +609,12 @@ export function createAdventureChessManager(opts: AdventureChessManagerOptions) 
       // 공격 기물이 살아남았을 경우 위치 갱신 및 승급 체크
       relocatePiece(attacker, real.move.from, real.move.to);
 
-      // 흡혈 처리
+      // 흡혈 처리 (밸런스 패치: 1회당 최대 15 HP 힐 한도)
       const hits = getStatusOnHitModifiers(attacker, globalMods);
       if (hits.lifesteal > 0) {
         const healAmt = Math.round(effectiveAttack(attacker, globalMods) * hits.lifesteal);
         if (healAmt > 0) {
-          attacker.hp = Math.min(attacker.maxHp, attacker.hp + healAmt);
+          attacker.hp = Math.min(attacker.maxHp, attacker.hp + Math.min(15, healAmt));
         }
       }
 
@@ -720,12 +739,12 @@ export function createAdventureChessManager(opts: AdventureChessManagerOptions) 
                   enemy.poisonDamage = 3;
                 }
 
-                // 신규 속박/약화 아이템 효과 적용
+                // 신규 속박/약화 아이템 효과 적용 (밸런스 패치: 50% 확률 발동)
                 const hits = getStatusOnHitModifiers(attacker, globalMods);
-                if (hits.bind > 0) {
+                if (hits.bind > 0 && rng() < 0.5) {
                   enemy.bindTurns = Math.max(enemy.bindTurns ?? 0, hits.bind);
                 }
-                if (hits.weaken > 0) {
+                if (hits.weaken > 0 && rng() < 0.5) {
                   enemy.weakenTurns = Math.max(enemy.weakenTurns ?? 0, hits.weaken);
                 }
 
@@ -835,12 +854,12 @@ export function createAdventureChessManager(opts: AdventureChessManagerOptions) 
           enemy.poisonDamage = 3;
         }
 
-        // 신규 속박/약화 아이템 효과 적용
+        // 신규 속박/약화 아이템 효과 적용 (밸런스 패치: 50% 확률 발동)
         const hits = getStatusOnHitModifiers(attacker, globalMods);
-        if (hits.bind > 0) {
+        if (hits.bind > 0 && rng() < 0.5) {
           enemy.bindTurns = Math.max(enemy.bindTurns ?? 0, hits.bind);
         }
-        if (hits.weaken > 0) {
+        if (hits.weaken > 0 && rng() < 0.5) {
           enemy.weakenTurns = Math.max(enemy.weakenTurns ?? 0, hits.weaken);
         }
 
@@ -883,12 +902,12 @@ export function createAdventureChessManager(opts: AdventureChessManagerOptions) 
                   enemy.poisonDamage = 3;
                 }
                 
-                // 신규 속박/약화 아이템 효과 적용
+                // 신규 속박/약화 아이템 효과 적용 (밸런스 패치: 50% 확률 발동)
                 const hits = getStatusOnHitModifiers(attacker, globalMods);
-                if (hits.bind > 0) {
+                if (hits.bind > 0 && rng() < 0.5) {
                   enemy.bindTurns = Math.max(enemy.bindTurns ?? 0, hits.bind);
                 }
-                if (hits.weaken > 0) {
+                if (hits.weaken > 0 && rng() < 0.5) {
                   enemy.weakenTurns = Math.max(enemy.weakenTurns ?? 0, hits.weaken);
                 }
 

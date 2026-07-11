@@ -1,4 +1,7 @@
 import type { Character, PieceLoadout } from '@shared/adventure';
+import { getItemById } from './items';
+
+const getStartingItems = (ids: string[]) => ids.map((id) => getItemById(id)).filter((x): x is any => !!x);
 
 const FILES = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'] as const;
 
@@ -109,7 +112,7 @@ export const ASSASSINS_CHARACTER: Character = {
       effect: { attack: 1 },
     },
   ],
-  startingItems: [],
+  startingItems: getStartingItems(['sharp-blade', 'sharp-blade']),
   isUnlocked: false,
   unlockCost: 50,
 };
@@ -129,7 +132,7 @@ export const SAINTS_CHARACTER: Character = {
       effect: { healPerTurn: 1 },
     },
   ],
-  startingItems: [],
+  startingItems: getStartingItems(['healing-herb', 'minor-potion']),
   isUnlocked: false,
   unlockCost: 80,
 };
@@ -149,7 +152,7 @@ export const FORTRESS_CHARACTER: Character = {
       effect: { healPerTurn: 0 }, // on-castle 트리거 핸들러에서 직접 HP 조작
     },
   ],
-  startingItems: [],
+  startingItems: getStartingItems(['iron-shield', 'iron-shield']),
   isUnlocked: false,
   unlockCost: 100,
 };
@@ -169,7 +172,7 @@ export const CHAOS_CHARACTER: Character = {
       effect: { attack: 0 }, // on-capture 핸들러에서 캡처 주체의 attack 직접 가산
     },
   ],
-  startingItems: [],
+  startingItems: getStartingItems(['binding-chain', 'binding-chain']),
   isUnlocked: false,
   unlockCost: 120,
 };
