@@ -29,6 +29,8 @@ export interface PieceState extends AdventurePiece {
   poisonDamage?: number;
   tempAtkBonus?: number;
   tempAtkBonusTurns?: number;
+  bindTurns?: number;
+  weakenTurns?: number;
   skill?: PieceSkill;
 }
 
@@ -72,6 +74,7 @@ export interface AdventureChessManagerOptions {
   initialFen?: string;
   /** 매 턴 시작 시 적용되는 캐릭터 패시브 (turn-start healPerTurn 등). */
   turnStartHeal?: number;
+  characterId?: string;
 }
 
 interface SynergyCheckResult {
@@ -112,7 +115,11 @@ function effectiveAttack(piece: AdventurePiece, globalMods: Modifier[]): number 
   const globalBonus = globalMods.reduce((acc, mod) => acc + (mod.attack ?? 0), 0);
   const synergyBonus = getSynergyModifier(piece).attack ?? 0;
   const tempBonus = (piece as PieceState).tempAtkBonus ?? 0;
-  return Math.max(0, piece.attack + itemBonus + globalBonus + synergyBonus + tempBonus);
+  let val = piece.attack + itemBonus + globalBonus + synergyBonus + tempBonus;
+  if ((piece as PieceState).weakenTurns && ((piece as PieceState).weakenTurns ?? 0) > 0) {
+    val = Math.floor(val * 0.5);
+  }
+  return Math.max(0, val);
 }
 
 function effectiveMaxHp(piece: AdventurePiece, globalMods: Modifier[]): number {
@@ -188,6 +195,32 @@ export function createAdventureChessManager(opts: AdventureChessManagerOptions) 
   const piecesById = new Map<string, PieceState>();
   let globalMods: Modifier[] = opts.globalModifiers ?? [];
   const turnStartHeal = opts.turnStartHeal ?? 0;
+  const characterId = opts.characterId;
+
+  function getStatusOnHitModifiers(piece: AdventurePiece, globalMods: Modifier[]): { bind: number; weaken: number; lifesteal: number } {
+    let bind = piece.items.reduce((acc, item) => acc + (item.modifier.bindOnHit ?? 0), 0);
+    bind += globalMods.reduce((acc, mod) => acc + (mod.bindOnHit ?? 0), 0);
+
+    let weaken = piece.items.reduce((acc, item) => acc + (item.modifier.weakenOnHit ?? 0), 0);
+    weaken += globalMods.reduce((acc, mod) => acc + (mod.weakenOnHit ?? 0), 0);
+
+    let lifesteal = piece.items.reduce((acc, item) => acc + (item.modifier.lifestealRatio ?? 0), 0);
+    lifesteal += globalMods.reduce((acc, mod) => acc + (mod.lifestealRatio ?? 0), 0);
+
+    return { bind, weaken, lifesteal };
+  }
+
+  function getRookCastleSquares(kingFrom: Square, kingTo: Square): { from: Square; to: Square } | null {
+    const fileTo = kingTo.charAt(0);
+    const rank = kingFrom.charAt(1);
+    if (fileTo === 'g') {
+      return { from: `h${rank}` as Square, to: `f${rank}` as Square };
+    }
+    if (fileTo === 'c') {
+      return { from: `a${rank}` as Square, to: `d${rank}` as Square };
+    }
+    return null;
+  }
 
   for (const piece of opts.pieces) {
     if (!piece.skill) {
@@ -337,6 +370,15 @@ export function createAdventureChessManager(opts: AdventureChessManagerOptions) 
     }
   }
 
+  function applyTurnEndStatusReduction(side: 'w' | 'b'): void {
+    for (const piece of piecesById.values()) {
+      if (piece.side === side) {
+        if (piece.bindTurns && piece.bindTurns > 0) piece.bindTurns -= 1;
+        if (piece.weakenTurns && piece.weakenTurns > 0) piece.weakenTurns -= 1;
+      }
+    }
+  }
+
   function getPieces(): PieceState[] {
     return Array.from(piecesById.values());
   }
@@ -369,6 +411,10 @@ export function createAdventureChessManager(opts: AdventureChessManagerOptions) 
     // 턴 시작 시점 패시브 발화 (현재 차례 진영에 적용 — 무브 직전에 한 번).
     applyTurnStartHeal(chess.turn());
 
+    if (attacker.bindTurns && attacker.bindTurns > 0) {
+      return { ok: false, reason: 'bound-piece', outcome: { kind: 'noop' }, fen: chess.getFen() };
+    }
+
     // 1. chess.js로 합법성 검증 + 메타데이터 수집 (preview)
     const preview = chess.previewMove(uci);
     if (!preview.ok) {
@@ -387,6 +433,26 @@ export function createAdventureChessManager(opts: AdventureChessManagerOptions) 
         return { ok: false, reason: real.reason, outcome: { kind: 'noop' }, fen: chess.getFen() };
       }
       relocatePiece(attacker, real.move.from, real.move.to);
+
+      // 캐슬링 처리: 룩의 piecesBySquare 및 square 갱신
+      if (real.move.isCastle) {
+        const rookCastle = getRookCastleSquares(real.move.from, real.move.to);
+        if (rookCastle) {
+          const rookPiece = piecesBySquare.get(rookCastle.from);
+          if (rookPiece) {
+            relocatePiece(rookPiece, rookCastle.from, rookCastle.to);
+
+            // 요새단 패시브 발화: 캐슬링 참여 킹과 룩 HP +15 회복
+            if (characterId === 'fortress') {
+              attacker.hp = Math.min(attacker.maxHp, attacker.hp + 15);
+              rookPiece.hp = Math.min(rookPiece.maxHp, rookPiece.hp + 15);
+            }
+          }
+        }
+      }
+
+      applyTurnEndStatusReduction(attacker.side);
+
       if (real.move.promotion) {
         applyPromotion(attacker, real.move.promotion);
         return {
@@ -409,6 +475,15 @@ export function createAdventureChessManager(opts: AdventureChessManagerOptions) 
       if (synIds.hasViper) {
         defender.poisonTurns = 3;
         defender.poisonDamage = 3;
+      }
+
+      // 신규 속박/약화 아이템 효과 적용
+      const hits = getStatusOnHitModifiers(attacker, globalMods);
+      if (hits.bind > 0) {
+        defender.bindTurns = Math.max(defender.bindTurns ?? 0, hits.bind);
+      }
+      if (hits.weaken > 0) {
+        defender.weakenTurns = Math.max(defender.weakenTurns ?? 0, hits.weaken);
       }
 
       // 공격자의 피해 정산 (반격 데미지 = 방어자(킹) attack + thorns)
@@ -437,6 +512,7 @@ export function createAdventureChessManager(opts: AdventureChessManagerOptions) 
 
       // 차례 교대 및 en-passant 권리 무효화 등을 위해 swapTurnOnly 호출
       chess.swapTurnOnly();
+      applyTurnEndStatusReduction(attacker.side);
 
       return {
         ok: true,
@@ -465,6 +541,11 @@ export function createAdventureChessManager(opts: AdventureChessManagerOptions) 
     // 아군 기물이 캡처당했을 시 킹 HP 전가 패널티 적용
     if (defender.side === 'w') {
       applyKingPenalty(getKingPenalty(defender.type));
+    }
+
+    // 혼돈단 패시브 발화: 아군 폰이 적 캡처 성공 시 공격력 +2 영구 누적
+    if (characterId === 'chaos' && attacker.type === 'p' && attacker.side === 'w') {
+      attacker.attack += 2;
     }
 
     // 태양의 가호 세트 시너지 감지: sturdy-cloak + sunforged-blade 장착 시 아군 킹 8 힐, 장착 기물 ATK +2 영구 누적
@@ -508,10 +589,22 @@ export function createAdventureChessManager(opts: AdventureChessManagerOptions) 
     if (!attackerDied) {
       // 공격 기물이 살아남았을 경우 위치 갱신 및 승급 체크
       relocatePiece(attacker, real.move.from, real.move.to);
+
+      // 흡혈 처리
+      const hits = getStatusOnHitModifiers(attacker, globalMods);
+      if (hits.lifesteal > 0) {
+        const healAmt = Math.round(effectiveAttack(attacker, globalMods) * hits.lifesteal);
+        if (healAmt > 0) {
+          attacker.hp = Math.min(attacker.maxHp, attacker.hp + healAmt);
+        }
+      }
+
       if (real.move.promotion) {
         applyPromotion(attacker, real.move.promotion);
       }
     }
+
+    applyTurnEndStatusReduction(attacker.side);
 
     return {
       ok: true,
@@ -627,6 +720,15 @@ export function createAdventureChessManager(opts: AdventureChessManagerOptions) 
                   enemy.poisonDamage = 3;
                 }
 
+                // 신규 속박/약화 아이템 효과 적용
+                const hits = getStatusOnHitModifiers(attacker, globalMods);
+                if (hits.bind > 0) {
+                  enemy.bindTurns = Math.max(enemy.bindTurns ?? 0, hits.bind);
+                }
+                if (hits.weaken > 0) {
+                  enemy.weakenTurns = Math.max(enemy.weakenTurns ?? 0, hits.weaken);
+                }
+
                 calculateMitigatedDamage(enemy, targetDmg);
                 if (enemy.hp <= 0) {
                   if (enemy.type === 'k') {
@@ -733,6 +835,15 @@ export function createAdventureChessManager(opts: AdventureChessManagerOptions) 
           enemy.poisonDamage = 3;
         }
 
+        // 신규 속박/약화 아이템 효과 적용
+        const hits = getStatusOnHitModifiers(attacker, globalMods);
+        if (hits.bind > 0) {
+          enemy.bindTurns = Math.max(enemy.bindTurns ?? 0, hits.bind);
+        }
+        if (hits.weaken > 0) {
+          enemy.weakenTurns = Math.max(enemy.weakenTurns ?? 0, hits.weaken);
+        }
+
         calculateMitigatedDamage(enemy, dmg);
         if (enemy.hp <= 0) {
           if (enemy.type === 'k') {
@@ -772,6 +883,15 @@ export function createAdventureChessManager(opts: AdventureChessManagerOptions) 
                   enemy.poisonDamage = 3;
                 }
                 
+                // 신규 속박/약화 아이템 효과 적용
+                const hits = getStatusOnHitModifiers(attacker, globalMods);
+                if (hits.bind > 0) {
+                  enemy.bindTurns = Math.max(enemy.bindTurns ?? 0, hits.bind);
+                }
+                if (hits.weaken > 0) {
+                  enemy.weakenTurns = Math.max(enemy.weakenTurns ?? 0, hits.weaken);
+                }
+
                 calculateMitigatedDamage(enemy, dmg);
                 if (enemy.hp <= 0) {
                   if (enemy.type === 'k') {
@@ -808,6 +928,7 @@ export function createAdventureChessManager(opts: AdventureChessManagerOptions) 
         attacker.skill.hasUsedThisMatch = true;
       }
       chess.swapTurnOnly();
+      applyTurnEndStatusReduction(attacker.side);
 
       return {
         ok: true,
@@ -825,7 +946,13 @@ export function createAdventureChessManager(opts: AdventureChessManagerOptions) 
     chess,
     getFen: () => chess.getFen(),
     turn: () => chess.turn(),
-    legalDestinations: (sq: Square) => chess.legalDestinations(sq),
+    legalDestinations: (sq: Square) => {
+      const p = piecesBySquare.get(sq);
+      if (p && p.bindTurns && p.bindTurns > 0) {
+        return [];
+      }
+      return chess.legalDestinations(sq);
+    },
     getPieces,
     getPieceAt,
     getKingHp,

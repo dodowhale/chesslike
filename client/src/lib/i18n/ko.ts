@@ -146,6 +146,10 @@ export interface I18nDict {
     assassinsDesc: string;
     saints: string;
     saintsDesc: string;
+    fortress: string;
+    fortressDesc: string;
+    chaos: string;
+    chaosDesc: string;
   };
   difficulty: {
     novice: string;
@@ -348,7 +352,11 @@ export const ko: I18nDict = {
     assassins: '암살자단',
     assassinsDesc: '나이트 강화 파티. 두 나이트가 HP·ATK + 점프 확장 보너스를 받는다.',
     saints: '신성단',
-    saintsDesc: '비숍·킹 강화 + 결속 패시브. 매 턴 킹 HP +1 회복.',
+    saintsDesc: '비숍·킹 강화 + 결속 패시브. 4기의 비숍이 매 턴 결속 회복을 제공합니다.',
+    fortress: '요새단',
+    fortressDesc: '룩 강화 파티. 캐슬링 시 참여 기물들이 대량 회복됩니다.',
+    chaos: '혼돈단',
+    chaosDesc: '폰 강화 파티. 폰이 적을 캡처할 때마다 기본 공격력이 영구 누적 성장합니다.',
   },
   difficulty: {
     novice: '초보',

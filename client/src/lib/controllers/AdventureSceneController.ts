@@ -378,6 +378,7 @@ export class AdventureRunController implements SceneController {
       globalModifiers: [...this.run.globalModifiers],
       initialFen: STARTING_FEN,
       turnStartHeal,
+      characterId: this.run.characterId,
     });
     resetStatusOngoing();
     setInteractive(true);

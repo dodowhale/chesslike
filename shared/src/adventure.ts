@@ -17,6 +17,12 @@ export interface Modifier {
   healPerTurn?: number;
   /** 피격(공격당한) 시 attacker에게 되돌려주는 반사 데미지. 캡처/damaged 양쪽 모두 적용. */
   thornsDamage?: number;
+  /** 피격/스킬 타격 시 대상에게 부여하는 속박(Bind) 턴 수. */
+  bindOnHit?: number;
+  /** 피격/스킬 타격 시 대상에게 부여하는 약화(Weaken) 턴 수. */
+  weakenOnHit?: number;
+  /** 캡처 시 공격력 비례 아군 기물 HP 회복 비율 (0.5 = 50%). */
+  lifestealRatio?: number;
 }
 
 export interface Item {

@@ -156,7 +156,11 @@ export const en: I18nDict = {
     assassins: 'Assassins',
     assassinsDesc: 'Knight-focused squad. Both knights receive HP and ATK boosts.',
     saints: 'Saints',
-    saintsDesc: 'Bishop and King-focused squad with health regen passive.',
+    saintsDesc: 'Bishop and King-focused squad with health regen passive. 4 Bishops provide reliable support.',
+    fortress: 'Fortress',
+    fortressDesc: 'Rook-focused squad. Castling restores large amounts of HP for both participating pieces.',
+    chaos: 'Chaos',
+    chaosDesc: 'Pawn-focused squad. Pawns permanently gain +2 ATK whenever they capture an enemy.',
   },
   difficulty: {
     novice: 'Novice',

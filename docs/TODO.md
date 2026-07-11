@@ -88,7 +88,7 @@
 ### 캐릭터 해금
 - [x] 암살자단 (나이트 강화 + 점프 데미지 패시브)
 - [x] 신성단 (비숍·킹 강화 + 결속 회복 패시브)
-- [ ] (선택) 요새단·혼돈단 — TODO 명시 선택 사항, M6+ 콘텐츠 확장
+- [x] 요새단·혼돈단 캐릭터 정식 구현 및 해금 트리 반영 (M6+ 확장 적용)
 
 ### 추가 막
 - [x] 2막 (8노드 + 막 보스)
@@ -172,8 +172,8 @@
 - [ ] AI 차례 사이에 시각 지연 (사용자가 보스/적 응답을 인지하도록 300~500ms) — Tween 동기화용 250ms는 이미 적용됨, 추가 조정만 남음
 
 ### 코드 — 콘텐츠 확장
-- [ ] 요새단 캐릭터 (룩 강화 파티, M4 선택 사항)
-- [ ] 혼돈단 캐릭터 (랜덤 시작 진형)
+- [x] 요새단 캐릭터 (룩 강화 파티, M4 선택 사항)
+- [x] 혼돈단 캐릭터 (폰 성장 파티로 재설계)
 - [x] 도전과제 5 → 15 (act2/act3-clear, saints-clear, gold-hoarder, flawless-act1, event-explorer, shop-spender, boss-slayer, rare-trio, legend-trio) — RunStats 누적형 평가 포함
 - [x] 통계 화면 `/stats` (총 런/승률/보스 클리어/누적 골드/막별 보스 등) + HeaderBar 📊 활성화
 - [x] 이벤트 풀 6 → 15 (goblin-ambush, hermits-blessing, cursed-chest, pilgrims-shrine, wanderers-deal, ravens-warning, forgotten-library, merchants-favor, arena-trial)

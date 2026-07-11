@@ -40,17 +40,66 @@ export const STANDARD_CHARACTER: Character = {
   isUnlocked: true,
 };
 
+function assassinsLoadout(): PieceLoadout[] {
+  return standardLoadout().map((p) => {
+    if (p.side === 'w') {
+      if (p.startingSquare === 'c1' || p.startingSquare === 'f1') {
+        return { type: 'n', side: 'w', startingSquare: p.startingSquare, baseStatsOverride: { hp: 40, attack: 15 } };
+      }
+      if (p.type === 'n') {
+        return { ...p, baseStatsOverride: { hp: 40, attack: 15 } };
+      }
+    }
+    return p;
+  });
+}
+
+function saintsLoadout(): PieceLoadout[] {
+  return standardLoadout().map((p) => {
+    if (p.side === 'w') {
+      if (p.startingSquare === 'b1' || p.startingSquare === 'g1') {
+        return { type: 'b', side: 'w', startingSquare: p.startingSquare, baseStatsOverride: { hp: 35, attack: 14 } };
+      }
+      if (p.type === 'b') {
+        return { ...p, baseStatsOverride: { hp: 35, attack: 14 } };
+      }
+      if (p.type === 'k') {
+        return { ...p, baseStatsOverride: { hp: 65, attack: 10 } };
+      }
+    }
+    return p;
+  });
+}
+
+function fortressLoadout(): PieceLoadout[] {
+  return standardLoadout().map((p) => {
+    if (p.side === 'w') {
+      if (p.startingSquare === 'c1' || p.startingSquare === 'f1') {
+        return { type: 'r', side: 'w', startingSquare: p.startingSquare, baseStatsOverride: { hp: 50, attack: 15 } };
+      }
+      if (p.type === 'r') {
+        return { ...p, baseStatsOverride: { hp: 50, attack: 15 } };
+      }
+    }
+    return p;
+  });
+}
+
+function chaosLoadout(): PieceLoadout[] {
+  return standardLoadout().map((p) => {
+    if (p.side === 'w' && p.type === 'p') {
+      return { ...p, baseStatsOverride: { hp: 10, attack: 10 } };
+    }
+    return p;
+  });
+}
+
 /** 암살자단 — 나이트가 강화된 파티. */
 export const ASSASSINS_CHARACTER: Character = {
   id: 'assassins',
   name: '암살자단',
-  description: '나이트 강화 파티. 두 나이트가 HP·ATK + 점프 확장 보너스를 받는다.',
-  startingPieces: standardLoadout().map((p) => {
-    if (p.type === 'n' && p.side === 'w') {
-      return { ...p, baseStatsOverride: { hp: 40, attack: 15 } };
-    }
-    return p;
-  }),
+  description: '나이트 강화 파티. 4기의 나이트가 전열을 구축해 빠른 암습을 노립니다.',
+  startingPieces: assassinsLoadout(),
   passives: [
     {
       id: 'assassins-jump',
@@ -69,16 +118,8 @@ export const ASSASSINS_CHARACTER: Character = {
 export const SAINTS_CHARACTER: Character = {
   id: 'saints',
   name: '신성단',
-  description: '비숍·킹 강화 + 결속 패시브. 매 턴 킹 HP +1 회복.',
-  startingPieces: standardLoadout().map((p) => {
-    if (p.type === 'b' && p.side === 'w') {
-      return { ...p, baseStatsOverride: { hp: 35, attack: 14 } };
-    }
-    if (p.type === 'k' && p.side === 'w') {
-      return { ...p, baseStatsOverride: { hp: 65, attack: 10 } };
-    }
-    return p;
-  }),
+  description: '비숍·킹 강화 + 결속 패시브. 4기의 비숍이 매 턴 결속 회복을 제공합니다.',
+  startingPieces: saintsLoadout(),
   passives: [
     {
       id: 'saints-blessing',
@@ -93,10 +134,52 @@ export const SAINTS_CHARACTER: Character = {
   unlockCost: 80,
 };
 
+/** 요새단 — 룩 강화 파티. */
+export const FORTRESS_CHARACTER: Character = {
+  id: 'fortress',
+  name: '요새단',
+  description: '룩 강화 파티. 캐슬링 시 참여 기물들이 대량 회복됩니다.',
+  startingPieces: fortressLoadout(),
+  passives: [
+    {
+      id: 'fortress-bulwark',
+      name: '요새의 장벽',
+      description: '아군 캐슬링 수행 시 참여 킹과 룩 HP +15 회복',
+      trigger: 'on-castle',
+      effect: { healPerTurn: 0 }, // on-castle 트리거 핸들러에서 직접 HP 조작
+    },
+  ],
+  startingItems: [],
+  isUnlocked: false,
+  unlockCost: 100,
+};
+
+/** 혼돈단 — 폰 강화 파티. */
+export const CHAOS_CHARACTER: Character = {
+  id: 'chaos',
+  name: '혼돈단',
+  description: '폰 강화 파티. 폰이 적을 캡처할 때마다 기본 공격력이 영구 누적 성장합니다.',
+  startingPieces: chaosLoadout(),
+  passives: [
+    {
+      id: 'chaos-evolution',
+      name: '혼돈의 진화',
+      description: '아군 폰이 적 캡처 성공 시 공격력 +2 영구 누적',
+      trigger: 'on-capture',
+      effect: { attack: 0 }, // on-capture 핸들러에서 캡처 주체의 attack 직접 가산
+    },
+  ],
+  startingItems: [],
+  isUnlocked: false,
+  unlockCost: 120,
+};
+
 export const CHARACTER_POOL: Character[] = [
   STANDARD_CHARACTER,
   ASSASSINS_CHARACTER,
   SAINTS_CHARACTER,
+  FORTRESS_CHARACTER,
+  CHAOS_CHARACTER,
 ];
 
 export function getCharacterById(id: string): Character | undefined {
