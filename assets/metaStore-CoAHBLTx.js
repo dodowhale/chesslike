@@ -1,0 +1,1 @@
+import{h as o}from"./index-CxPpmGXm.js";import{l as r,s as i}from"./gameStore-Ch2BVp7S.js";const[t,s]=o();let e=!1;const l=t;async function d(){if(!e){e=!0;const a=await r();s(a)}return t()}async function m(a){s(a),await i(a)}export{d as e,l as m,m as u};
