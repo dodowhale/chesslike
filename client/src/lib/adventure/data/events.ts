@@ -362,10 +362,11 @@ export const EVENT_POOL: EventDef[] = [
 /** 노드 ID 기반 시드로 안정적인 이벤트 선택. */
 export function pickEventForNode(nodeId: string, act: Act): EventDef {
   const candidates = EVENT_POOL.filter((e) => e.acts.includes(act));
+  const pool = candidates.length > 0 ? candidates : EVENT_POOL;
   let hash = 0;
   for (let i = 0; i < nodeId.length; i++) {
     hash = (hash * 31 + nodeId.charCodeAt(i)) >>> 0;
   }
-  const idx = hash % candidates.length;
-  return candidates[idx]!;
+  const idx = hash % pool.length;
+  return pool[idx]!;
 }

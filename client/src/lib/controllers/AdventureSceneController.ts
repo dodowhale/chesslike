@@ -467,6 +467,7 @@ export class AdventureRunController implements SceneController {
         if (bp) {
           return {
             ...original,
+            type: bp.type,
             hp: bp.hp,
             maxHp: bp.maxHp,
             attack: bp.attack,
