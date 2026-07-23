@@ -16,10 +16,11 @@ class AudioManager {
 
   init(): void {
     if (this.initialized) return;
+    if (typeof window === 'undefined') return;
     const AC =
       (window as { AudioContext?: typeof AudioContext }).AudioContext ??
       (window as { webkitAudioContext?: typeof AudioContext })
-        .webkitAudioContext;
+        ?.webkitAudioContext;
     if (!AC) return;
     this.ctx = new AC();
     this.masterBgm = this.ctx.createGain();

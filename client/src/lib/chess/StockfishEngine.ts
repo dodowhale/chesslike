@@ -39,7 +39,8 @@ export interface UciOptions {
   hash?: number;
 }
 
-const STOCKFISH_URL = `${import.meta.env.BASE_URL}stockfish/stockfish-18-lite-single.js`;
+const baseUrl = import.meta.env?.BASE_URL || '/';
+const STOCKFISH_URL = `${baseUrl.endsWith('/') ? baseUrl : baseUrl + '/'}stockfish/stockfish-18-lite-single.js`;
 
 interface CurrentGo {
   token: number;
@@ -211,7 +212,7 @@ export class StockfishEngine {
   }
 }
 
-function parseInfo(line: string): InfoLine {
+export function parseInfo(line: string): InfoLine {
   const tokens = line.split(/\s+/);
   const info: InfoLine = { rawLine: line };
   for (let i = 0; i < tokens.length; i++) {
