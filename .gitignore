@@ -39,3 +39,9 @@ Thumbs.db
 *.db-journal
 *.db-wal
 *.db-shm
+
+# Antigravity CLI
+.gemini/
+.agy/
+.antigravity/
+

@@ -1,7 +1,7 @@
-import type { Character, PieceLoadout } from '@shared/adventure';
+import type { Character, PieceLoadout, Item } from '@shared/adventure';
 import { getItemById } from './items';
 
-const getStartingItems = (ids: string[]) => ids.map((id) => getItemById(id)).filter((x): x is any => !!x);
+const getStartingItems = (ids: string[]) => ids.map((id) => getItemById(id)).filter((x): x is Item => !!x);
 
 const FILES = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'] as const;
 

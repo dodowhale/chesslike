@@ -77,6 +77,8 @@ app.post('/api/achievements/verify', async (c) => {
 const port = Number(process.env.PORT ?? 3000);
 console.log(`[chesslike-server] starting on :${port}`);
 
+export { app };
+
 export default {
   port,
   fetch: app.fetch,
